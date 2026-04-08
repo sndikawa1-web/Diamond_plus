@@ -308,10 +308,10 @@
     let products = [];
     let cart = [];
 
-    // ★ CSV LİNKİNİ BURAYA YAPIŞTIR ★
-    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQD5WYxQ315Di8nu-vILXAXtYeGyoRyq8NyEvoozVOGIwsyKXwzZ7ax6XWZO7-312Vx2r6vYaeluFYH/pub?gid=0&single=true&output=csv";
+    // ★ KENDİ CSV LİNKİNİ BURAYA YAPIŞTIR ★
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS7N92CcB-MFe9UlE7YHTSJCVpaBkeRYawz5TbCGpFsZBjy4DHu_LNitJyULHyz9Ml68A6ZcP93cM2H/pub?gid=0&single=true&output=csv";
     
-    // ★ WHATSAPP NUMARAN (90 ile başla) ★
+    // ★ KENDİ WHATSAPP NUMARANI YAZ (90 ile başla, örn: 905551234567) ★
     const PHONE_NUMBER = "90XXXXXXXXX";
 
     async function loadProducts() {
@@ -377,9 +377,14 @@
                     }
                 }
             }
-            renderProducts();
+            if (products.length === 0) {
+                container.innerHTML = '<div class="empty-products">⚠️ Ürün bulunamadı.<br>Google Sheets kontrol edin.</div>';
+            } else {
+                renderProducts();
+            }
         } catch(e) {
-            container.innerHTML = '<div class="empty-products">❌ Ürünler yüklenemedi.</div>';
+            console.error(e);
+            container.innerHTML = '<div class="empty-products">❌ Ürünler yüklenemedi.<br>Sayfayı yenileyin.</div>';
         }
     }
 
@@ -412,7 +417,6 @@
             container.appendChild(card);
         });
         
-        // Miktar butonları
         document.querySelectorAll('.qty-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -426,7 +430,6 @@
             });
         });
         
-        // Sepete ekle butonları
         document.querySelectorAll('.add-to-cart').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const idx = parseInt(btn.dataset.idx);
@@ -463,7 +466,7 @@
         
         const modalList = document.getElementById("cartModalItems");
         if (cart.length === 0) {
-            modalList.innerHTML = '<li style="text-align:center;">Sepetiniz boş</li>';
+            modalList.innerHTML = '<li style="text-align:center; color:#aaa;">Sepetiniz boş</li>';
             document.getElementById("cartModalTotal").innerText = "Toplam: $0";
             return;
         }
@@ -502,7 +505,7 @@
     }
 
     function sendOrder() {
-        if (cart.length === 0) return alert("Sepet boş!");
+        if (cart.length === 0) return alert("Sepetiniz boş!");
         let msg = "💎 YENİ SİPARİŞ (Diamond Plus)%0A%0A";
         let total = 0;
         cart.forEach(item => {
@@ -524,7 +527,7 @@
         });
     }
 
-    // Modal
+    // Modal kontrol
     const modal = document.getElementById("cartModal");
     document.getElementById("cartFloat").onclick = () => { updateCartUI(); modal.classList.add("active"); };
     document.getElementById("closeModalBtn").onclick = () => modal.classList.remove("active");
