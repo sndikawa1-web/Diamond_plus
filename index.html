@@ -1,181 +1,534 @@
 <!DOCTYPE html>
-<html>
+<html lang="tr">
 <head>
-    <title>Diamond Plus - Ürünlerim</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Diamond Plus | Alışveriş</title>
     <style>
-        body { font-family: Arial; padding: 10px; background: #f5f5f5; margin: 0; }
-        .header { background: #8B0000; color: white; padding: 15px; text-align: center; border-radius: 0 0 20px 20px; margin-bottom: 15px; }
-        .product { background: white; margin: 10px 0; padding: 10px; border-radius: 10px; display: flex; gap: 10px; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .product img { width: 80px; height: 80px; object-fit: cover; border-radius: 10px; }
-        .info { flex: 1; }
-        .info b { font-size: 16px; }
-        .price { color: #8B0000; font-weight: bold; margin-top: 5px; }
-        button { background: #8B0000; border: none; padding: 5px 15px; border-radius: 20px; color: white; font-weight: bold; cursor: pointer; }
-        .cart { background: white; padding: 10px; border-radius: 10px; margin-top: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .cart h3 { margin: 0 0 10px 0; }
-        #cartItems { list-style: none; padding: 0; margin: 0; }
-        #cartItems li { padding: 5px 0; border-bottom: 1px solid #eee; }
-        #whatsappBtn { background: #25D366; width: 100%; padding: 12px; font-size: 18px; margin-top: 10px; border-radius: 25px; }
-        .total { font-weight: bold; margin-top: 10px; text-align: right; }
-        .loading { text-align: center; padding: 20px; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #f8f9fc;
+            padding-bottom: 80px;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 0 0 25px 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .header h1 {
+            font-size: 1.8rem;
+            letter-spacing: 1px;
+        }
+        .header p {
+            font-size: 0.85rem;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        /* Kategori / Filtre (isteğe bağlı) */
+        .categories {
+            display: flex;
+            gap: 10px;
+            padding: 15px;
+            overflow-x: auto;
+            white-space: nowrap;
+            background: white;
+            margin: 15px;
+            border-radius: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .category-btn {
+            background: #f0f2f5;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .category-btn.active {
+            background: #1a1a2e;
+            color: white;
+        }
+
+        /* Ürün Grid */
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 15px;
+            padding: 0 15px;
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            position: relative;
+        }
+        .product-card:active {
+            transform: scale(0.98);
+        }
+        .product-img {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            object-fit: cover;
+            background: #f5f5f5;
+        }
+        .product-info {
+            padding: 12px;
+        }
+        .product-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+            color: #1a1a2e;
+        }
+        .product-price {
+            font-weight: 700;
+            color: #e67e22;
+            font-size: 1.1rem;
+        }
+        .add-to-cart {
+            background: #1a1a2e;
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 10px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .add-to-cart:active {
+            background: #e67e22;
+        }
+
+        /* Sepet Butonu (Float) */
+        .cart-float {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #e67e22;
+            width: 60px;
+            height: 60px;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            cursor: pointer;
+            z-index: 100;
+            transition: all 0.2s;
+        }
+        .cart-float:active {
+            transform: scale(0.95);
+        }
+        .cart-icon {
+            font-size: 28px;
+        }
+        .cart-count {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: red;
+            color: white;
+            border-radius: 20px;
+            padding: 2px 8px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        /* Sepet Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 200;
+            justify-content: center;
+            align-items: flex-end;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: white;
+            width: 100%;
+            max-height: 85%;
+            border-radius: 25px 25px 0 0;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            background: white;
+        }
+        .cart-items-list {
+            padding: 0 20px;
+            list-style: none;
+        }
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .cart-item-info {
+            flex: 1;
+        }
+        .cart-item-name {
+            font-weight: 500;
+        }
+        .cart-item-price {
+            font-size: 0.8rem;
+            color: #777;
+        }
+        .cart-item-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .qty-btn {
+            background: #f0f2f5;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .cart-total {
+            padding: 20px;
+            border-top: 1px solid #eee;
+            font-weight: bold;
+            font-size: 1.2rem;
+            text-align: right;
+        }
+        .whatsapp-order {
+            background: #25D366;
+            color: white;
+            border: none;
+            width: calc(100% - 40px);
+            margin: 0 20px 20px 20px;
+            padding: 14px;
+            border-radius: 30px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .whatsapp-order:active {
+            background: #128C7E;
+        }
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #777;
+        }
+
+        /* Empty state */
+        .empty-products {
+            text-align: center;
+            padding: 40px;
+            color: #aaa;
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h2>💎 Diamond Plus</h2>
-        <p>Ürünlerimiz</p>
+
+<div class="header">
+    <h1>💎 DIAMOND PLUS</h1>
+    <p>Premium Ürünler | Hızlı Sipariş</p>
+</div>
+
+<!-- Kategoriler (isteğe bağlı, tüm ürünler için sabit) -->
+<div class="categories">
+    <button class="category-btn active">Tüm Ürünler</button>
+</div>
+
+<div id="productsContainer" class="products-grid">Ürünler yükleniyor...</div>
+
+<!-- Sepet Float Butonu -->
+<div class="cart-float" id="cartFloat">
+    <span class="cart-icon">🛒</span>
+    <span class="cart-count" id="cartCount">0</span>
+</div>
+
+<!-- Sepet Modal -->
+<div id="cartModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>🛍️ Sepetim</h3>
+            <button class="close-modal" id="closeModalBtn">&times;</button>
+        </div>
+        <ul id="cartModalItems" class="cart-items-list">
+            <li>Sepetiniz boş</li>
+        </ul>
+        <div id="cartModalTotal" class="cart-total">Toplam: 0 TL</div>
+        <button id="whatsappOrderBtn" class="whatsapp-order">📲 WhatsApp ile Sipariş Gönder</button>
     </div>
+</div>
+
+<script>
+    let products = [];
+    let cart = [];
+
+    // ★ KENDİ CSV LİNKİNİ BURAYA YAPIŞTIR (kesinlikle output=csv ile biten) ★
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQD5WYxQ315Di8nu-vILXAXtYeGyoRyq8NyEvoozVOGIwsyKXwzZ7ax6XWZO7-312Vx2r6vYaeluFYH/pub?gid=0&single=true&output=csv";
     
-    <div id="products" class="loading">Ürünler yükleniyor...</div>
-    
-    <div class="cart">
-        <h3>🛍️ Sepetim</h3>
-        <ul id="cartItems"></ul>
-        <div class="total" id="totalAmount">Toplam: 0 TL</div>
-        <button id="whatsappBtn">📲 WhatsApp ile Sipariş Ver</button>
-    </div>
+    // ★ KENDİ WHATSAPP NUMARANI YAZ (başında 0 olmadan, 90 ile başla) ★
+    const PHONE_NUMBER = "90XXXXXXXXX";
 
-    <script>
-        let products = [];
-        let cart = [];
-
-        // ★ BURAYA KENDİ CSV LİNKİNİ YAPIŞTIR ★
-        const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQD5WYxQ315Di8nu-vILXAXtYeGyoRyq8NyEvoozVOGIwsyKXwzZ7ax6XWZO7-312Vx2r6vYaeluFYH/pub?gid=0&single=true&output=csv";
-
-        async function loadProducts() {
-            try {
-                console.log("CSV yükleniyor:", CSV_URL);
-                const response = await fetch(CSV_URL);
-                const text = await response.text();
-                console.log("Gelen CSV:", text.substring(0, 200));
-                
-                const rows = text.split("\n");
-                if (rows.length < 2) throw new Error("Veri bulunamadı");
-                
-                // Başlık satırını bul (id, name, price, image içeren)
-                let headerRow = rows[0];
-                let headers = headerRow.toLowerCase().split(",");
-                
-                // Sütun indexlerini bul
-                let idIndex = headers.indexOf("id");
-                let nameIndex = headers.indexOf("name");
-                let priceIndex = headers.indexOf("price");
-                let imageIndex = headers.indexOf("image");
-                
-                // Eğer tam bulunamazsa varsayılan sıra: 0:id, 1:name, 2:price, 3:image
-                if (idIndex === -1) idIndex = 0;
-                if (nameIndex === -1) nameIndex = 1;
-                if (priceIndex === -1) priceIndex = 2;
-                if (imageIndex === -1) imageIndex = 3;
-                
-                products = [];
-                for (let i = 1; i < rows.length; i++) {
-                    const row = rows[i].trim();
-                    if (!row) continue;
-                    
-                    // Tırnak içindeki virgülleri korumak için basit bölme
-                    let cols = [];
-                    let inQuote = false;
-                    let current = "";
-                    for (let c of row) {
-                        if (c === '"') {
-                            inQuote = !inQuote;
-                        } else if (c === ',' && !inQuote) {
-                            cols.push(current);
-                            current = "";
-                        } else {
-                            current += c;
-                        }
-                    }
-                    cols.push(current);
-                    
-                    // Tırnakları temizle
-                    cols = cols.map(c => c.replace(/^"|"$/g, '').trim());
-                    
-                    if (cols.length >= 3) {
-                        const id = cols[idIndex] || i;
-                        const name = cols[nameIndex];
-                        let price = parseFloat(cols[priceIndex]?.replace(/[^0-9.,-]/g, '').replace(',', '.'));
-                        const image = cols[imageIndex] || "";
-                        
-                        if (name && !isNaN(price)) {
-                            products.push({ id, name, price, image });
-                        }
-                    }
-                }
-                
-                console.log("Ürünler yüklendi:", products);
-                showProducts();
-                
-                if (products.length === 0) {
-                    document.getElementById("products").innerHTML = "<p>Ürün bulunamadı. Lütfen Google Sheets'inizde 'id, name, price, image' başlıklarının olduğundan emin olun.</p>";
-                }
-                
-            } catch(e) {
-                console.error("Hata:", e);
-                document.getElementById("products").innerHTML = "<p style='color:red'>Ürünler yüklenemedi. Lütfen sayfayı yenileyin.<br>Hata: " + e.message + "</p>";
-            }
-        }
-
-        function showProducts() {
-            const div = document.getElementById("products");
-            div.innerHTML = "";
-            products.forEach(p => {
-                div.innerHTML += `
-                    <div class="product">
-                        <img src="${p.image || 'https://via.placeholder.com/80?text=Resim+Yok'}" onerror="this.src='https://via.placeholder.com/80?text=Resim+Yok'">
-                        <div class="info">
-                            <b>${p.name}</b>
-                            <div class="price">${p.price} TL</div>
-                        </div>
-                        <button onclick="addToCart('${p.id}','${p.name}',${p.price})">Sepete Ekle</button>
-                    </div>
-                `;
-            });
-        }
-
-        function addToCart(id, name, price) {
-            const existing = cart.find(item => item.id === id);
-            if (existing) {
-                existing.qty++;
-            } else {
-                cart.push({ id, name, price, qty: 1 });
-            }
-            showCart();
-        }
-
-        function showCart() {
-            const ul = document.getElementById("cartItems");
-            ul.innerHTML = "";
-            let total = 0;
-            cart.forEach(item => {
-                const itemTotal = item.price * item.qty;
-                total += itemTotal;
-                ul.innerHTML += `<li>${item.name} x ${item.qty} = ${itemTotal} TL</li>`;
-            });
-            document.getElementById("totalAmount").innerHTML = `Toplam: ${total} TL`;
-        }
-
-        document.getElementById("whatsappBtn").onclick = () => {
-            if (cart.length === 0) {
-                alert("Sepetiniz boş!");
-                return;
-            }
-            let msg = "💎 YENİ SİPARİŞ%0A";
-            cart.forEach(item => {
-                msg += `- ${item.name} x ${item.qty} = ${item.price * item.qty} TL%0A`;
-            });
-            let total = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
-            msg += `%0A📦 TOPLAM: ${total} TL`;
+    // CSV'den ürünleri yükle
+    async function loadProducts() {
+        const container = document.getElementById("productsContainer");
+        container.innerHTML = '<div class="loading">📦 Ürünler yükleniyor...</div>';
+        
+        try {
+            const response = await fetch(CSV_URL);
+            const text = await response.text();
+            const rows = text.split("\n");
+            if (rows.length < 2) throw new Error("Veri yok");
             
-            // ★ KENDİ NUMARANI BURAYA YAZ (90 ile başla, örn: 905551234567) ★
-            const phone = "90XXXXXXXXX";
-            const url = `https://wa.me/${phone}?text=${msg}`;
-            window.open(url);
-        };
+            const headers = rows[0].toLowerCase().split(",");
+            let idIdx = headers.indexOf("id");
+            let nameIdx = headers.indexOf("name");
+            let priceIdx = headers.indexOf("price");
+            let imgIdx = headers.indexOf("image");
+            
+            if (idIdx === -1) idIdx = 0;
+            if (nameIdx === -1) nameIdx = 1;
+            if (priceIdx === -1) priceIdx = 2;
+            if (imgIdx === -1) imgIdx = 3;
+            
+            products = [];
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i].trim();
+                if (!row) continue;
+                
+                let cols = [];
+                let inQuote = false, current = "";
+                for (let ch of row) {
+                    if (ch === '"') inQuote = !inQuote;
+                    else if (ch === ',' && !inQuote) {
+                        cols.push(current);
+                        current = "";
+                    } else current += ch;
+                }
+                cols.push(current);
+                cols = cols.map(c => c.replace(/^"|"$/g, '').trim());
+                
+                if (cols.length >= 3) {
+                    const id = cols[idIdx] || i;
+                    const name = cols[nameIdx];
+                    let price = parseFloat(cols[priceIdx]?.replace(/[^0-9.,-]/g, '').replace(',', '.'));
+                    const image = cols[imgIdx] || "";
+                    
+                    if (name && !isNaN(price)) {
+                        products.push({ id, name, price, image });
+                    }
+                }
+            }
+            
+            if (products.length === 0) {
+                container.innerHTML = '<div class="empty-products">⚠️ Ürün bulunamadı.<br>Google Sheets kontrol edin.</div>';
+            } else {
+                renderProducts();
+            }
+        } catch (err) {
+            console.error(err);
+            container.innerHTML = '<div class="empty-products">❌ Ürünler yüklenirken hata oluştu.<br>Sayfayı yenileyin.</div>';
+        }
+    }
 
-        loadProducts();
-    </script>
+    // Ürünleri ekrana bas
+    function renderProducts() {
+        const container = document.getElementById("productsContainer");
+        container.innerHTML = "";
+        products.forEach(product => {
+            const card = document.createElement("div");
+            card.className = "product-card";
+            card.innerHTML = `
+                <img class="product-img" src="${product.image || 'https://via.placeholder.com/200?text=Resim+Yok'}" 
+                     onerror="this.src='https://via.placeholder.com/200?text=Resim+Yok'">
+                <div class="product-info">
+                    <div class="product-name">${escapeHtml(product.name)}</div>
+                    <div class="product-price">${product.price} ₺</div>
+                </div>
+                <button class="add-to-cart" data-id="${product.id}" data-name="${escapeHtml(product.name)}" data-price="${product.price}">
+                    🛒 Sepete Ekle
+                </button>
+            `;
+            container.appendChild(card);
+        });
+        
+        // Sepete ekle butonlarına event
+        document.querySelectorAll('.add-to-cart').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const id = btn.dataset.id;
+                const name = btn.dataset.name;
+                const price = parseFloat(btn.dataset.price);
+                addToCart(id, name, price);
+            });
+        });
+    }
+
+    // Sepete ekleme
+    function addToCart(id, name, price) {
+        const existing = cart.find(item => item.id === id);
+        if (existing) {
+            existing.quantity++;
+        } else {
+            cart.push({ id, name, price, quantity: 1 });
+        }
+        updateCartUI();
+        // Haptik geri bildirim (opsiyonel)
+        const btn = event?.target;
+        if(btn) btn.style.transform = 'scale(0.95)';
+        setTimeout(() => { if(btn) btn.style.transform = ''; }, 100);
+    }
+
+    // Sepet UI güncelleme (float buton ve modal)
+    function updateCartUI() {
+        const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+        document.getElementById("cartCount").innerText = totalItems;
+        
+        // Modal içeriğini güncelle
+        const modalList = document.getElementById("cartModalItems");
+        if (cart.length === 0) {
+            modalList.innerHTML = '<li style="text-align:center; color:#aaa;">Sepetiniz boş</li>';
+            document.getElementById("cartModalTotal").innerText = "Toplam: 0 TL";
+            return;
+        }
+        
+        modalList.innerHTML = "";
+        let total = 0;
+        cart.forEach((item, idx) => {
+            const itemTotal = item.price * item.quantity;
+            total += itemTotal;
+            const li = document.createElement("li");
+            li.className = "cart-item";
+            li.innerHTML = `
+                <div class="cart-item-info">
+                    <div class="cart-item-name">${escapeHtml(item.name)}</div>
+                    <div class="cart-item-price">${item.price} ₺ x ${item.quantity}</div>
+                </div>
+                <div class="cart-item-actions">
+                    <button class="qty-btn" data-idx="${idx}" data-dir="minus">-</button>
+                    <span>${item.quantity}</span>
+                    <button class="qty-btn" data-idx="${idx}" data-dir="plus">+</button>
+                </div>
+            `;
+            modalList.appendChild(li);
+        });
+        
+        document.getElementById("cartModalTotal").innerText = `Toplam: ${total} ₺`;
+        
+        // Miktar butonlarına event ekle
+        document.querySelectorAll('.qty-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const idx = parseInt(btn.dataset.idx);
+                const dir = btn.dataset.dir;
+                if (dir === 'plus') {
+                    cart[idx].quantity++;
+                } else if (dir === 'minus') {
+                    if (cart[idx].quantity > 1) cart[idx].quantity--;
+                    else cart.splice(idx, 1);
+                }
+                updateCartUI();
+            });
+        });
+    }
+
+    // WhatsApp sipariş gönder
+    function sendOrderToWhatsApp() {
+        if (cart.length === 0) {
+            alert("Sepetiniz boş!");
+            return;
+        }
+        let message = "💎 YENİ SİPARİŞ%0A%0A";
+        let total = 0;
+        cart.forEach(item => {
+            const itemTotal = item.price * item.quantity;
+            total += itemTotal;
+            message += `🛍️ ${item.name} x ${item.quantity} = ${itemTotal} ₺%0A`;
+        });
+        message += `%0A📦 TOPLAM: ${total} ₺%0A%0A👤 Müşteri Bilgileri:`;
+        const url = `https://wa.me/${PHONE_NUMBER}?text=${message}`;
+        window.open(url);
+    }
+
+    // Basit XSS koruması
+    function escapeHtml(str) {
+        if (!str) return "";
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    // Modal kontrol
+    const modal = document.getElementById("cartModal");
+    const cartFloat = document.getElementById("cartFloat");
+    const closeModalBtn = document.getElementById("closeModalBtn");
+    const whatsappBtn = document.getElementById("whatsappOrderBtn");
+    
+    cartFloat.addEventListener("click", () => {
+        updateCartUI();
+        modal.classList.add("active");
+    });
+    closeModalBtn.addEventListener("click", () => {
+        modal.classList.remove("active");
+    });
+    modal.addEventListener("click", (e) => {
+        if (e.target === modal) modal.classList.remove("active");
+    });
+    whatsappBtn.addEventListener("click", sendOrderToWhatsApp);
+    
+    // Başlat
+    loadProducts();
+</script>
 </body>
 </html>
