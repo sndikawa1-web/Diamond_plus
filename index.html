@@ -306,19 +306,7 @@
             text-align: center;
             z-index: 1000;
             font-weight: bold;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
             animation: slideUp 0.3s ease;
-        }
-        .undo-btn {
-            background: rgba(255,255,255,0.3);
-            border: none;
-            color: white;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-weight: bold;
-            cursor: pointer;
         }
     </style>
 </head>
@@ -352,7 +340,6 @@
     let products = [];
     let cart = [];
     let countdownIntervals = [];
-    let lastAddedItem = null;
 
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS7N92CcB-MFe9UlE7YHTSJCVpaBkeRYawz5TbCGpFsZBjy4DHu_LNitJyULHyz9Ml68A6ZcP93cM2H/pub?gid=0&single=true&output=csv";
     const PHONE_NUMBER = "90XXXXXXXXX";
@@ -400,46 +387,9 @@
         countdownIntervals[productId] = setInterval(updateTimer, 1000);
     }
 
-    function showToast(message, product, quantity, isAutoAdd = true) {
+    function showToast(message) {
         const toast = document.createElement('div');
         toast.className = 'toast';
-        
-        const textSpan = document.createElement('span');
-        textSpan.innerText = message;
-        
-        if (isAutoAdd) {
-            const undoBtn = document.createElement('button');
-            undoBtn.innerText = 'Geri Al';
-            undoBtn.className = 'undo-btn';
-            undoBtn.onclick = () => {
-                // Son eklenen ürünü geri al
-                const existing = cart.find(item => item.id === product.id);
-                if (existing) {
-                    if (existing.quantity <= quantity) {
-                        const index = cart.findIndex(item => item.id === product.id);
-                        cart.splice(index, 1);
-                    } else {
-                        existing.quantity -= quantity;
-                    }
-                    updateCartUI();
-                    toast.remove();
-                    showSimpleToast(`❌ ${quantity} adet ${product.name} geri alındı`, false);
-                }
-            };
-            toast.appendChild(textSpan);
-            toast.appendChild(undoBtn);
-        } else {
-            toast.appendChild(textSpan);
-        }
-        
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
-    }
-
-    function showSimpleToast(message, isError = false) {
-        const toast = document.createElement('div');
-        toast.className = 'toast';
-        toast.style.background = isError ? '#e74c3c' : '#25D366';
         toast.innerText = message;
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), 2000);
@@ -547,11 +497,11 @@
                     </div>
                     ${hasDiscount && p.discountEnd ? `<div class="countdown-timer" id="${timerId}">⏰ Kalan süre: hesaplanıyor...</div>` : ''}
                     <div class="quantity-control">
-                        <button class="qty-btn minus-btn" data-idx="${idx}" data-dir="minus">−</button>
+                        <button class="qty-btn qty-minus" data-idx="${idx}">−</button>
                         <span class="qty-value" id="qty-${idx}">0</span>
-                        <button class="qty-btn plus-btn" data-idx="${idx}" data-dir="plus">+</button>
+                        <button class="qty-btn qty-plus" data-idx="${idx}">+</button>
                     </div>
-                    <button class="add-to-cart" data-idx="${idx}">🛒 Sepete Ekle (${p.finalPrice}$)</button>
+                    <button class="add-to-cart" data-idx="${idx}">🛒 Sepete Ekle ($${p.finalPrice})</button>
                 </div>
             `;
             container.appendChild(card);
@@ -561,18 +511,20 @@
             }
         });
         
-        // Plus butonu: HEMEN sepete ekle (1 adet)
-        document.querySelectorAll('.plus-btn').forEach(btn => {
+        // MİKTAR ARTIR (+)
+        document.querySelectorAll('.qty-plus').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const idx = parseInt(btn.dataset.idx);
-                addToCart(products[idx], 1);
-                showToast(`✅ 1 adet ${products[idx].name} sepete eklendi`, products[idx], 1, true);
+                const qtySpan = document.getElementById(`qty-${idx}`);
+                let currentQty = parseInt(qtySpan.innerText);
+                currentQty++;
+                qtySpan.innerText = currentQty;
             });
         });
         
-        // Minus butonu: Sadece miktarı azalt, OTOMATİK EKLEME YOK
-        document.querySelectorAll('.minus-btn').forEach(btn => {
+        // MİKTAR AZALT (-)
+        document.querySelectorAll('.qty-minus').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const idx = parseInt(btn.dataset.idx);
@@ -585,7 +537,7 @@
             });
         });
         
-        // Sepete Ekle butonu: Miktar butonlarıyla ayarlanan sayıyı ekle
+        // SEPETE EKLE BUTONU
         document.querySelectorAll('.add-to-cart').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const idx = parseInt(btn.dataset.idx);
@@ -593,10 +545,10 @@
                 let quantity = parseInt(qtySpan.innerText);
                 if (quantity > 0) {
                     addToCart(products[idx], quantity);
-                    showToast(`✅ ${quantity} adet ${products[idx].name} sepete eklendi`, products[idx], quantity, false);
+                    showToast(`✅ ${quantity} adet ${products[idx].name} sepete eklendi`);
                     qtySpan.innerText = 0;
                 } else {
-                    showSimpleToast("⚠️ Lütfen önce miktar seçin", true);
+                    showToast("⚠️ Lütfen önce miktar seçin");
                 }
             });
         });
