@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>Diamond Plus | Alışveriş</title>
-    <!-- html2canvas kütüphanesi - resim oluşturmak için -->
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -310,47 +308,6 @@
             font-weight: bold;
             animation: slideUp 0.3s ease;
         }
-        
-        /* Sipariş özeti resmi için gizli alan */
-        .order-summary-hidden {
-            position: fixed;
-            left: -9999px;
-            top: 0;
-            width: 400px;
-            background: linear-gradient(135deg, #0f0c29, #302b63);
-            border-radius: 20px;
-            padding: 20px;
-            color: white;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-        }
-        .order-summary-hidden h2 {
-            text-align: center;
-            margin-bottom: 20px;
-            font-size: 24px;
-        }
-        .order-summary-hidden .order-items {
-            margin-bottom: 20px;
-        }
-        .order-summary-hidden .order-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.2);
-        }
-        .order-summary-hidden .order-total {
-            text-align: right;
-            font-size: 18px;
-            font-weight: bold;
-            margin-top: 15px;
-            padding-top: 10px;
-            border-top: 2px solid #e67e22;
-        }
-        .order-summary-hidden .order-date {
-            text-align: center;
-            font-size: 12px;
-            opacity: 0.7;
-            margin-top: 15px;
-        }
     </style>
 </head>
 <body>
@@ -375,16 +332,8 @@
         </div>
         <ul id="cartModalItems" class="cart-items-list"><li>Sepetiniz boş</li></ul>
         <div id="cartModalTotal" class="cart-total">Toplam: $0</div>
-        <button id="whatsappOrderBtn" class="whatsapp-order">📲 WhatsApp ile Sipariş Gönder (Resimli)</button>
+        <button id="whatsappOrderBtn" class="whatsapp-order">📲 WhatsApp ile Sipariş Gönder</button>
     </div>
-</div>
-
-<!-- Sipariş özeti resmi için gizli alan -->
-<div id="orderSummaryHidden" class="order-summary-hidden">
-    <h2>💎 DIAMOND PLUS</h2>
-    <div id="orderItemsList" class="order-items"></div>
-    <div id="orderTotalDisplay" class="order-total"></div>
-    <div class="order-date">Sipariş Tarihi: <span id="orderDate"></span></div>
 </div>
 
 <script>
@@ -458,92 +407,22 @@
         }
     }
 
-    // Sipariş resmini oluşturup WhatsApp'a gönder
-    async function sendOrderWithImage() {
+    function sendOrder() {
         if (cart.length === 0) return alert("Sepetiniz boş!");
         
-        showToast("📸 Sipariş özeti hazırlanıyor...");
-        
-        // Gizli alandaki sipariş özetini doldur
-        const orderItemsDiv = document.getElementById("orderItemsList");
-        const orderTotalDiv = document.getElementById("orderTotalDisplay");
-        const orderDateSpan = document.getElementById("orderDate");
-        
-        let itemsHtml = "";
-        let total = 0;
-        cart.forEach(item => {
-            const itemTotal = item.price * item.quantity;
-            total += itemTotal;
-            itemsHtml += `
-                <div class="order-item">
-                    <span>🛍️ ${item.name} x ${item.quantity}</span>
-                    <span>$${itemTotal.toFixed(2)}</span>
-                </div>
-            `;
-        });
-        
-        orderItemsDiv.innerHTML = itemsHtml;
-        orderTotalDiv.innerHTML = `📦 TOPLAM: $${total.toFixed(2)}`;
-        orderDateSpan.innerText = new Date().toLocaleString('tr-TR');
-        
-        // Gizli alanı geçici olarak görünür yap (resim çekmek için)
-        const hiddenDiv = document.getElementById("orderSummaryHidden");
-        hiddenDiv.style.left = "0";
-        hiddenDiv.style.top = "0";
-        hiddenDiv.style.position = "fixed";
-        hiddenDiv.style.zIndex = "9999";
-        
-        // Biraz bekle (render için)
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        try {
-            // Resim oluştur
-            const canvas = await html2canvas(hiddenDiv, {
-                scale: 2,
-                backgroundColor: null,
-                logging: false
-            });
-            
-            // Gizli alanı tekrar gizle
-            hiddenDiv.style.left = "-9999px";
-            
-            // Resmi data URL olarak al
-            const imageData = canvas.toDataURL("image/png");
-            
-            // Resmi WhatsApp'a gönder
-            showToast("📤 Sipariş resmi WhatsApp'a gönderiliyor...");
-            
-            // Önce resmi gönder, sonra açıklama mesajı
-            const caption = `💎 YENİ SİPARİS%0A👤 Müşteri Bilgileri:`;
-            
-            // WhatsApp'a resim gönderme (base64 ile)
-            window.open(`https://wa.me/${PHONE_NUMBER}?text=${caption}`);
-            
-            // Not: WhatsApp web, base64 resimleri direkt açmaz. 
-            // Bu nedenle ayrıca mesaj gönderiyoruz.
-            setTimeout(() => {
-                showToast("✅ Sipariş özeti hazır! Lütfen resmi manuel olarak gönderin veya ekran görüntüsü alın.");
-            }, 1000);
-            
-        } catch(e) {
-            console.error("Resim oluşturma hatası:", e);
-            hiddenDiv.style.left = "-9999px";
-            showToast("❌ Resim oluşturulamadı, yazılı sipariş gönderiliyor");
-            sendOrderAsText();
-        }
-    }
-    
-    // Alternatif: Yazılı sipariş gönder
-    function sendOrderAsText() {
         let msg = "💎 YENİ SİPARİŞ (Diamond Plus)%0A%0A";
         let total = 0;
+        
         cart.forEach(item => {
             const itemTotal = item.price * item.quantity;
             total += itemTotal;
             msg += `🛍️ ${item.name} x ${item.quantity} = $${itemTotal.toFixed(2)}%0A`;
         });
-        msg += `%0A📦 TOPLAM: $${total.toFixed(2)}%0A%0A👤 Müşteri Bilgileri:`;
-        window.open(`https://wa.me/${PHONE_NUMBER}?text=${msg}`);
+        
+        msg += `%0A📦 TOPLAM: $${total.toFixed(2)}%0A%0A👤 Müşteri Bilgileri:%0AAd Soyad: %0ATelefon: %0AAdres:`;
+        
+        // WhatsApp'a yönlendir
+        window.open(`https://wa.me/${PHONE_NUMBER}?text=${encodeURIComponent(msg)}`);
     }
 
     async function loadProducts() {
@@ -782,7 +661,7 @@
     document.getElementById("cartFloat").onclick = () => { updateCartUI(); modal.classList.add("active"); };
     document.getElementById("closeModalBtn").onclick = () => modal.classList.remove("active");
     modal.onclick = (e) => { if (e.target === modal) modal.classList.remove("active"); };
-    document.getElementById("whatsappOrderBtn").onclick = sendOrderWithImage;
+    document.getElementById("whatsappOrderBtn").onclick = sendOrder;
     
     loadProducts();
 </script>
