@@ -395,6 +395,18 @@
         setTimeout(() => toast.remove(), 2000);
     }
 
+    function updateAddButtonText(idx, quantity, price) {
+        const addButton = document.querySelector(`.add-to-cart[data-idx="${idx}"]`);
+        if (addButton) {
+            if (quantity > 0) {
+                const total = (quantity * price).toFixed(2);
+                addButton.innerHTML = `🛒 Sepete Ekle (${quantity} adet - $${total})`;
+            } else {
+                addButton.innerHTML = `🛒 Sepete Ekle ($${price})`;
+            }
+        }
+    }
+
     async function loadProducts() {
         const container = document.getElementById("productsContainer");
         container.innerHTML = '<div class="loading">📦 Ürünler yükleniyor...</div>';
@@ -482,6 +494,7 @@
         products.forEach((p, idx) => {
             const hasDiscount = p.discountPercent > 0;
             const timerId = `timer-${p.id}`;
+            const productPrice = parseFloat(p.finalPrice);
             
             const card = document.createElement("div");
             card.className = "product-card";
@@ -501,7 +514,7 @@
                         <span class="qty-value" id="qty-${idx}">0</span>
                         <button class="qty-btn qty-plus" data-idx="${idx}">+</button>
                     </div>
-                    <button class="add-to-cart" data-idx="${idx}">🛒 Sepete Ekle ($${p.finalPrice})</button>
+                    <button class="add-to-cart" data-idx="${idx}">🛒 Sepete Ekle ($${productPrice})</button>
                 </div>
             `;
             container.appendChild(card);
@@ -520,6 +533,10 @@
                 let currentQty = parseInt(qtySpan.innerText);
                 currentQty++;
                 qtySpan.innerText = currentQty;
+                
+                // Buton metnini güncelle
+                const productPrice = parseFloat(products[idx].finalPrice);
+                updateAddButtonText(idx, currentQty, productPrice);
             });
         });
         
@@ -533,6 +550,10 @@
                 if (currentQty > 0) {
                     currentQty--;
                     qtySpan.innerText = currentQty;
+                    
+                    // Buton metnini güncelle
+                    const productPrice = parseFloat(products[idx].finalPrice);
+                    updateAddButtonText(idx, currentQty, productPrice);
                 }
             });
         });
@@ -547,6 +568,9 @@
                     addToCart(products[idx], quantity);
                     showToast(`✅ ${quantity} adet ${products[idx].name} sepete eklendi`);
                     qtySpan.innerText = 0;
+                    // Buton metnini sıfırla
+                    const productPrice = parseFloat(products[idx].finalPrice);
+                    updateAddButtonText(idx, 0, productPrice);
                 } else {
                     showToast("⚠️ Lütfen önce miktar seçin");
                 }
