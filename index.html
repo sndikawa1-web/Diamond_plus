@@ -40,51 +40,64 @@
         let products = [];
         let cart = [];
 
-        // ★ BURAYA KENDİ HTML YAYIN LİNKİNİ YAPIŞTIR ★
-        const HTML_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQD5WYxQ315Di8nu-vILXAXtYeGyoRyq8NyEvoozVOGIwsyKXwzZ7ax6XWZO7-312Vx2r6vYaeluFYH/pubhtml?gid=0&single=true";
+        // ★ BURAYA KENDİ CSV LİNKİNİ YAPIŞTIR ★
+        const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQD5WYxQ315Di8nu-vILXAXtYeGyoRyq8NyEvoozVOGIwsyKXwzZ7ax6XWZO7-312Vx2r6vYaeluFYH/pub?gid=0&single=true&output=csv";
 
         async function loadProducts() {
             try {
-                const response = await fetch(HTML_URL);
-                const htmlText = await response.text();
+                console.log("CSV yükleniyor:", CSV_URL);
+                const response = await fetch(CSV_URL);
+                const text = await response.text();
+                console.log("Gelen CSV:", text.substring(0, 200));
                 
-                // HTML içinden tabloyu bul
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(htmlText, 'text/html');
-                const table = doc.querySelector('table');
+                const rows = text.split("\n");
+                if (rows.length < 2) throw new Error("Veri bulunamadı");
                 
-                if (!table) {
-                    throw new Error("Tablo bulunamadı");
-                }
+                // Başlık satırını bul (id, name, price, image içeren)
+                let headerRow = rows[0];
+                let headers = headerRow.toLowerCase().split(",");
                 
-                const rows = table.querySelectorAll('tr');
+                // Sütun indexlerini bul
+                let idIndex = headers.indexOf("id");
+                let nameIndex = headers.indexOf("name");
+                let priceIndex = headers.indexOf("price");
+                let imageIndex = headers.indexOf("image");
+                
+                // Eğer tam bulunamazsa varsayılan sıra: 0:id, 1:name, 2:price, 3:image
+                if (idIndex === -1) idIndex = 0;
+                if (nameIndex === -1) nameIndex = 1;
+                if (priceIndex === -1) priceIndex = 2;
+                if (imageIndex === -1) imageIndex = 3;
+                
                 products = [];
-                
-                // Başlıkları bul (ilk satır)
-                let headers = [];
-                const headerRow = rows[0];
-                if (headerRow) {
-                    const headerCells = headerRow.querySelectorAll('th, td');
-                    headerCells.forEach(cell => {
-                        headers.push(cell.textContent.trim().toLowerCase());
-                    });
-                }
-                
-                // id, name, price, image sütunlarının indexlerini bul
-                const idIndex = headers.indexOf('id');
-                const nameIndex = headers.indexOf('name');
-                const priceIndex = headers.indexOf('price');
-                const imageIndex = headers.indexOf('image');
-                
-                // Veri satırlarını işle
                 for (let i = 1; i < rows.length; i++) {
-                    const cells = rows[i].querySelectorAll('td');
-                    if (cells.length >= 3) {
-                        const id = idIndex !== -1 ? cells[idIndex]?.textContent.trim() : i;
-                        const name = nameIndex !== -1 ? cells[nameIndex]?.textContent.trim() : cells[0]?.textContent.trim();
-                        const priceText = priceIndex !== -1 ? cells[priceIndex]?.textContent.trim() : cells[1]?.textContent.trim();
-                        const price = parseFloat(priceText.replace(/[^0-9.,]/g, '').replace(',', '.'));
-                        const image = imageIndex !== -1 ? cells[imageIndex]?.textContent.trim() : "";
+                    const row = rows[i].trim();
+                    if (!row) continue;
+                    
+                    // Tırnak içindeki virgülleri korumak için basit bölme
+                    let cols = [];
+                    let inQuote = false;
+                    let current = "";
+                    for (let c of row) {
+                        if (c === '"') {
+                            inQuote = !inQuote;
+                        } else if (c === ',' && !inQuote) {
+                            cols.push(current);
+                            current = "";
+                        } else {
+                            current += c;
+                        }
+                    }
+                    cols.push(current);
+                    
+                    // Tırnakları temizle
+                    cols = cols.map(c => c.replace(/^"|"$/g, '').trim());
+                    
+                    if (cols.length >= 3) {
+                        const id = cols[idIndex] || i;
+                        const name = cols[nameIndex];
+                        let price = parseFloat(cols[priceIndex]?.replace(/[^0-9.,-]/g, '').replace(',', '.'));
+                        const image = cols[imageIndex] || "";
                         
                         if (name && !isNaN(price)) {
                             products.push({ id, name, price, image });
@@ -95,19 +108,19 @@
                 console.log("Ürünler yüklendi:", products);
                 showProducts();
                 
+                if (products.length === 0) {
+                    document.getElementById("products").innerHTML = "<p>Ürün bulunamadı. Lütfen Google Sheets'inizde 'id, name, price, image' başlıklarının olduğundan emin olun.</p>";
+                }
+                
             } catch(e) {
                 console.error("Hata:", e);
-                document.getElementById("products").innerHTML = "<p style='color:red'>Ürünler yüklenemedi. Lütfen sayfayı yenileyin.</p>";
+                document.getElementById("products").innerHTML = "<p style='color:red'>Ürünler yüklenemedi. Lütfen sayfayı yenileyin.<br>Hata: " + e.message + "</p>";
             }
         }
 
         function showProducts() {
             const div = document.getElementById("products");
             div.innerHTML = "";
-            if (products.length === 0) {
-                div.innerHTML = "<p>Henüz ürün eklenmemiş.</p>";
-                return;
-            }
             products.forEach(p => {
                 div.innerHTML += `
                     <div class="product">
@@ -149,9 +162,9 @@
                 alert("Sepetiniz boş!");
                 return;
             }
-            let msg = "💎 YENİ SİPARİŞ %0A";
+            let msg = "💎 YENİ SİPARİŞ%0A";
             cart.forEach(item => {
-                msg += `- ${item.name} x ${item.qty} = ${item.price * item.qty} TL %0A`;
+                msg += `- ${item.name} x ${item.qty} = ${item.price * item.qty} TL%0A`;
             });
             let total = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
             msg += `%0A📦 TOPLAM: ${total} TL`;
