@@ -126,10 +126,30 @@
             font-weight: bold;
             cursor: pointer;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+        }
+        .qty-btn:active {
+            transform: scale(0.95);
         }
         .qty-value {
             font-weight: 600;
             font-size: 1rem;
+        }
+        .add-to-cart {
+            background: #e67e22;
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 10px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            cursor: pointer;
+            margin-top: 10px;
+            border-radius: 30px;
+            transition: background 0.2s;
+        }
+        .add-to-cart:active {
+            background: #d35400;
         }
         
         .cart-float {
@@ -146,6 +166,10 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
             cursor: pointer;
             z-index: 100;
+            transition: transform 0.2s;
+        }
+        .cart-float:active {
+            transform: scale(0.95);
         }
         .cart-icon {
             font-size: 28px;
@@ -270,6 +294,32 @@
             padding: 40px;
             color: #aaa;
         }
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            left: 20px;
+            right: 20px;
+            background: #25D366;
+            color: white;
+            padding: 12px;
+            border-radius: 30px;
+            text-align: center;
+            z-index: 1000;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: slideUp 0.3s ease;
+        }
+        .undo-btn {
+            background: rgba(255,255,255,0.3);
+            border: none;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -302,6 +352,7 @@
     let products = [];
     let cart = [];
     let countdownIntervals = [];
+    let lastAddedItem = null;
 
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS7N92CcB-MFe9UlE7YHTSJCVpaBkeRYawz5TbCGpFsZBjy4DHu_LNitJyULHyz9Ml68A6ZcP93cM2H/pub?gid=0&single=true&output=csv";
     const PHONE_NUMBER = "90XXXXXXXXX";
@@ -347,6 +398,51 @@
         
         updateTimer();
         countdownIntervals[productId] = setInterval(updateTimer, 1000);
+    }
+
+    function showToast(message, product, quantity, isAutoAdd = true) {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        
+        const textSpan = document.createElement('span');
+        textSpan.innerText = message;
+        
+        if (isAutoAdd) {
+            const undoBtn = document.createElement('button');
+            undoBtn.innerText = 'Geri Al';
+            undoBtn.className = 'undo-btn';
+            undoBtn.onclick = () => {
+                // Son eklenen ürünü geri al
+                const existing = cart.find(item => item.id === product.id);
+                if (existing) {
+                    if (existing.quantity <= quantity) {
+                        const index = cart.findIndex(item => item.id === product.id);
+                        cart.splice(index, 1);
+                    } else {
+                        existing.quantity -= quantity;
+                    }
+                    updateCartUI();
+                    toast.remove();
+                    showSimpleToast(`❌ ${quantity} adet ${product.name} geri alındı`, false);
+                }
+            };
+            toast.appendChild(textSpan);
+            toast.appendChild(undoBtn);
+        } else {
+            toast.appendChild(textSpan);
+        }
+        
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    function showSimpleToast(message, isError = false) {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.style.background = isError ? '#e74c3c' : '#25D366';
+        toast.innerText = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2000);
     }
 
     async function loadProducts() {
@@ -451,10 +547,11 @@
                     </div>
                     ${hasDiscount && p.discountEnd ? `<div class="countdown-timer" id="${timerId}">⏰ Kalan süre: hesaplanıyor...</div>` : ''}
                     <div class="quantity-control">
-                        <button class="qty-btn" data-idx="${idx}" data-dir="minus">−</button>
+                        <button class="qty-btn minus-btn" data-idx="${idx}" data-dir="minus">−</button>
                         <span class="qty-value" id="qty-${idx}">0</span>
-                        <button class="qty-btn" data-idx="${idx}" data-dir="plus">+</button>
+                        <button class="qty-btn plus-btn" data-idx="${idx}" data-dir="plus">+</button>
                     </div>
+                    <button class="add-to-cart" data-idx="${idx}">🛒 Sepete Ekle (${p.finalPrice}$)</button>
                 </div>
             `;
             container.appendChild(card);
@@ -464,21 +561,42 @@
             }
         });
         
-        document.querySelectorAll('.qty-btn').forEach(btn => {
+        // Plus butonu: HEMEN sepete ekle (1 adet)
+        document.querySelectorAll('.plus-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const idx = parseInt(btn.dataset.idx);
-                const dir = btn.dataset.dir;
+                addToCart(products[idx], 1);
+                showToast(`✅ 1 adet ${products[idx].name} sepete eklendi`, products[idx], 1, true);
+            });
+        });
+        
+        // Minus butonu: Sadece miktarı azalt, OTOMATİK EKLEME YOK
+        document.querySelectorAll('.minus-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const idx = parseInt(btn.dataset.idx);
                 const qtySpan = document.getElementById(`qty-${idx}`);
                 let currentQty = parseInt(qtySpan.innerText);
-                if (dir === 'plus') currentQty++;
-                else if (dir === 'minus' && currentQty > 0) currentQty--;
-                qtySpan.innerText = currentQty;
-                
-                // ★ MİKTAR DEĞİŞİNCE OTOMATİK SEPETE EKLE ★
                 if (currentQty > 0) {
-                    addToCart(products[idx], currentQty);
+                    currentQty--;
+                    qtySpan.innerText = currentQty;
+                }
+            });
+        });
+        
+        // Sepete Ekle butonu: Miktar butonlarıyla ayarlanan sayıyı ekle
+        document.querySelectorAll('.add-to-cart').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const idx = parseInt(btn.dataset.idx);
+                const qtySpan = document.getElementById(`qty-${idx}`);
+                let quantity = parseInt(qtySpan.innerText);
+                if (quantity > 0) {
+                    addToCart(products[idx], quantity);
+                    showToast(`✅ ${quantity} adet ${products[idx].name} sepete eklendi`, products[idx], quantity, false);
                     qtySpan.innerText = 0;
+                } else {
+                    showSimpleToast("⚠️ Lütfen önce miktar seçin", true);
                 }
             });
         });
@@ -497,23 +615,6 @@
             });
         }
         updateCartUI();
-        
-        // Geri bildirim
-        const toast = document.createElement('div');
-        toast.innerHTML = `✅ ${quantity} adet ${product.name} sepete eklendi`;
-        toast.style.position = 'fixed';
-        toast.style.bottom = '100px';
-        toast.style.left = '20px';
-        toast.style.right = '20px';
-        toast.style.background = '#25D366';
-        toast.style.color = 'white';
-        toast.style.padding = '12px';
-        toast.style.borderRadius = '30px';
-        toast.style.textAlign = 'center';
-        toast.style.zIndex = '1000';
-        toast.style.fontWeight = 'bold';
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 2000);
     }
 
     function updateCartUI() {
