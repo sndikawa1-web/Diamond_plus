@@ -308,7 +308,7 @@
     let products = [];
     let cart = [];
 
-    // ★ KENDİ CSV LİNKİNİ BURAYA YAPIŞTIR ★
+    // ★ SENİN VERDİĞİN LİNK (aynen eklendi) ★
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS7N92CcB-MFe9UlE7YHTSJCVpaBkeRYawz5TbCGpFsZBjy4DHu_LNitJyULHyz9Ml68A6ZcP93cM2H/pub?gid=0&single=true&output=csv";
     
     // ★ KENDİ WHATSAPP NUMARANI YAZ (90 ile başla, örn: 905551234567) ★
@@ -318,8 +318,11 @@
         const container = document.getElementById("productsContainer");
         container.innerHTML = '<div class="loading">📦 Ürünler yükleniyor...</div>';
         try {
+            console.log("Yükleniyor:", CSV_URL);
             const response = await fetch(CSV_URL);
+            if (!response.ok) throw new Error("HTTP " + response.status);
             const text = await response.text();
+            console.log("Gelen veri uzunluğu:", text.length);
             const rows = text.split("\n");
             if (rows.length < 2) throw new Error("Veri yok");
             
@@ -352,7 +355,6 @@
                     let discount = discIdx !== -1 && cols[discIdx] ? parseFloat(cols[discIdx]) : 0;
                     let discountEnd = discEndIdx !== -1 && cols[discEndIdx] ? cols[discEndIdx] : "";
                     
-                    // İndirim tarihi kontrolü
                     let isDiscountValid = false;
                     if (discount > 0 && discountEnd) {
                         const today = new Date().toISOString().slice(0,10);
@@ -383,8 +385,8 @@
                 renderProducts();
             }
         } catch(e) {
-            console.error(e);
-            container.innerHTML = '<div class="empty-products">❌ Ürünler yüklenemedi.<br>Sayfayı yenileyin.</div>';
+            console.error("Hata:", e);
+            container.innerHTML = '<div class="empty-products">❌ Ürünler yüklenemedi.<br>Sayfayı yenileyin.<br>Hata: ' + e.message + '</div>';
         }
     }
 
@@ -527,7 +529,6 @@
         });
     }
 
-    // Modal kontrol
     const modal = document.getElementById("cartModal");
     document.getElementById("cartFloat").onclick = () => { updateCartUI(); modal.classList.add("active"); };
     document.getElementById("closeModalBtn").onclick = () => modal.classList.remove("active");
