@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Diamond Plus - Ürünlerim</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: Arial; padding: 10px; background: #f5f5f5; margin: 0; }
+        .header { background: #8B0000; color: white; padding: 15px; text-align: center; border-radius: 0 0 20px 20px; margin-bottom: 15px; }
+        .product { background: white; margin: 10px 0; padding: 10px; border-radius: 10px; display: flex; gap: 10px; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .product img { width: 80px; height: 80px; object-fit: cover; border-radius: 10px; }
+        .info { flex: 1; }
+        .info b { font-size: 16px; }
+        .price { color: #8B0000; font-weight: bold; margin-top: 5px; }
+        button { background: #8B0000; border: none; padding: 5px 15px; border-radius: 20px; color: white; font-weight: bold; cursor: pointer; }
+        .cart { background: white; padding: 10px; border-radius: 10px; margin-top: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .cart h3 { margin: 0 0 10px 0; }
+        #cartItems { list-style: none; padding: 0; margin: 0; }
+        #cartItems li { padding: 5px 0; border-bottom: 1px solid #eee; }
+        #whatsappBtn { background: #25D366; width: 100%; padding: 12px; font-size: 18px; margin-top: 10px; border-radius: 25px; }
+        .total { font-weight: bold; margin-top: 10px; text-align: right; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>💎 Diamond Plus</h2>
+        <p>Ürünlerimiz</p>
+    </div>
+    
+    <div id="products"></div>
+    
+    <div class="cart">
+        <h3>🛍️ Sepetim</h3>
+        <ul id="cartItems"></ul>
+        <div class="total" id="totalAmount">Toplam: 0 TL</div>
+        <button id="whatsappBtn">📲 WhatsApp ile Sipariş Ver</button>
+    </div>
+
+    <script>
+        let products = [];
+        let cart = [];
+
+        // ★ BURAYA KENDİ LİNKİNİ YAPIŞTIR ★
+        // Şu anki pubhtml linkin: 
+        // https://docs.google.com/spreadsheets/d/e/2PACX-1vQD5WYxQ315Di8nu-vILXAXtYeGyoRyq8NyEvoozVOGIwsyKXwzZ7ax6XWZO7-312Vx2r6vYaeluFYH/pubhtml
+        
+        // CSV linkine çevirdim:
+        const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQD5WYxQ315Di8nu-vILXAXtYeGyoRyq8NyEvoozVOGIwsyKXwzZ7ax6XWZO7-312Vx2r6vYaeluFYH/export?format=csv";
+
+        async function loadProducts() {
+            try {
+                const res = await fetch(CSV_URL);
+                const text = await res.text();
+                console.log("Gelen veri:", text);
+                const rows = text.split("\n").slice(1); // başlık satırını atla
+                products = [];
+                for (let i = 0; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (!row.trim()) continue;
+                    const cols = row.split(",");
+                    if (cols.length >= 4) {
+                        products.push({
+                            id: cols[0].replace(/"/g, ''),
+                            name: cols[1].replace(/"/g, ''),
+                            price: parseFloat(cols[2].replace(/"/g, '')),
+                            image: cols[3].replace(/"/g, '')
+                        });
+                    }
+                }
+                console.log("Ürünler:", products);
+                showProducts();
+            } catch(e) {
+                console.error("Hata:", e);
+                document.getElementById("products").innerHTML = "<p style='color:red'>Ürünler yüklenemedi. Lütfen sayfayı yenileyin.</p>";
+            }
+        }
+
+        function showProducts() {
+            const div = document.getElementById("products");
+            div.innerHTML = "";
+            if (products.length === 0) {
+                div.innerHTML = "<p>Henüz ürün eklenmemiş.</p>";
+                return;
+            }
+            products.forEach(p => {
+                div.innerHTML += `
+                    <div class="product">
+                        <img src="${p.image}" onerror="this.src='https://via.placeholder.com/80?text=Resim+Yok'">
+                        <div class="info">
+                            <b>${p.name}</b>
+                            <div class="price">${p.price} TL</div>
+                        </div>
+                        <button onclick="addToCart('${p.id}','${p.name}',${p.price})">Sepete Ekle</button>
+                    </div>
+                `;
+            });
+        }
+
+        function addToCart(id, name, price) {
+            const existing = cart.find(item => item.id === id);
+            if (existing) {
+                existing.qty++;
+            } else {
+                cart.push({ id, name, price, qty: 1 });
+            }
+            showCart();
+        }
+
+        function showCart() {
+            const ul = document.getElementById("cartItems");
+            ul.innerHTML = "";
+            let total = 0;
+            cart.forEach(item => {
+                const itemTotal = item.price * item.qty;
+                total += itemTotal;
+                ul.innerHTML += `<li>${item.name} x ${item.qty} = ${itemTotal} TL</li>`;
+            });
+            document.getElementById("totalAmount").innerHTML = `Toplam: ${total} TL`;
+        }
+
+        document.getElementById("whatsappBtn").onclick = () => {
+            if (cart.length === 0) {
+                alert("Sepetiniz boş!");
+                return;
+            }
+            let msg = "💎 YENİ SİPARİŞ %0A";
+            cart.forEach(item => {
+                msg += `- ${item.name} x ${item.qty} = ${item.price * item.qty} TL %0A`;
+            });
+            let total = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+            msg += `%0A📦 TOPLAM: ${total} TL`;
+            
+            // ★ KENDİ NUMARANI BURAYA YAZ (90 ile başla, örn: 905551234567) ★
+            const phone = "90XXXXXXXXX";
+            const url = `https://wa.me/${phone}?text=${msg}`;
+            window.open(url);
+        };
+
+        loadProducts();
+    </script>
+</body>
+</html>
