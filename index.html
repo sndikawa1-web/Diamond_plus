@@ -308,7 +308,7 @@
     let products = [];
     let cart = [];
 
-    // ★ SENİN VERDİĞİN LİNK (aynen eklendi) ★
+    // ★ GOOGLE SHEETS LİNKİ (SENİN VERDİĞİN) ★
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS7N92CcB-MFe9UlE7YHTSJCVpaBkeRYawz5TbCGpFsZBjy4DHu_LNitJyULHyz9Ml68A6ZcP93cM2H/pub?gid=0&single=true&output=csv";
     
     // ★ KENDİ WHATSAPP NUMARANI YAZ (90 ile başla, örn: 905551234567) ★
@@ -331,8 +331,8 @@
             const nameIdx = headers.indexOf("name") !== -1 ? headers.indexOf("name") : 1;
             const priceIdx = headers.indexOf("price") !== -1 ? headers.indexOf("price") : 2;
             const imgIdx = headers.indexOf("image") !== -1 ? headers.indexOf("image") : 3;
-            const discIdx = headers.indexOf("discount");
-            const discEndIdx = headers.indexOf("discount_end");
+            const discIdx = headers.indexOf("discount") !== -1 ? headers.indexOf("discount") : 4;
+            const discEndIdx = headers.indexOf("discount_end") !== -1 ? headers.indexOf("discount_end") : 5;
             
             products = [];
             for (let i = 1; i < rows.length; i++) {
@@ -353,13 +353,21 @@
                     let price = parseFloat(cols[priceIdx]?.replace(/[^0-9.-]/g, ''));
                     const image = cols[imgIdx] || "";
                     let discount = discIdx !== -1 && cols[discIdx] ? parseFloat(cols[discIdx]) : 0;
-                    let discountEnd = discEndIdx !== -1 && cols[discEndIdx] ? cols[discEndIdx] : "";
+                    let discountEndRaw = discEndIdx !== -1 && cols[discEndIdx] ? cols[discEndIdx] : "";
                     
+                    // ★ TARİH FORMATINI DÜZELTEN KISIM (2026-5-5 → 2026-05-05) ★
                     let isDiscountValid = false;
-                    if (discount > 0 && discountEnd) {
+                    if (discount > 0 && discountEndRaw) {
+                        let fixedDate = discountEndRaw;
+                        let parts = fixedDate.split('-');
+                        if (parts.length === 3) {
+                            parts[1] = parts[1].padStart(2, '0');
+                            parts[2] = parts[2].padStart(2, '0');
+                            fixedDate = parts.join('-');
+                        }
                         const today = new Date().toISOString().slice(0,10);
-                        if (discountEnd >= today) isDiscountValid = true;
-                    } else if (discount > 0 && !discountEnd) {
+                        if (fixedDate >= today) isDiscountValid = true;
+                    } else if (discount > 0 && !discountEndRaw) {
                         isDiscountValid = true;
                     }
                     
@@ -373,7 +381,7 @@
                     if (name && !isNaN(price)) {
                         products.push({
                             id, name, price, finalPrice: finalPrice.toFixed(2),
-                            discountPercent, discountEnd: isDiscountValid ? discountEnd : null,
+                            discountPercent, discountEnd: isDiscountValid ? discountEndRaw : null,
                             image
                         });
                     }
