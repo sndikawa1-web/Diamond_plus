@@ -97,6 +97,16 @@
             color: #e74c3c;
             margin-top: 4px;
         }
+        .countdown-timer {
+            font-size: 0.7rem;
+            background: #fff3e0;
+            padding: 4px 8px;
+            border-radius: 12px;
+            margin-top: 5px;
+            text-align: center;
+            font-weight: bold;
+            color: #e67e22;
+        }
         .quantity-control {
             display: flex;
             align-items: center;
@@ -121,23 +131,7 @@
             font-weight: 600;
             font-size: 1rem;
         }
-        .add-to-cart {
-            background: #1a1a2e;
-            color: white;
-            border: none;
-            width: 100%;
-            padding: 10px;
-            font-weight: 600;
-            font-size: 0.8rem;
-            cursor: pointer;
-            margin-top: 10px;
-            border-radius: 30px;
-            transition: background 0.2s;
-        }
-        .add-to-cart:active {
-            background: #e67e22;
-        }
-
+        
         .cart-float {
             position: fixed;
             bottom: 20px;
@@ -307,22 +301,61 @@
 <script>
     let products = [];
     let cart = [];
+    let countdownIntervals = [];
 
-    // ★ GOOGLE SHEETS LİNKİ (SENİN VERDİĞİN) ★
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS7N92CcB-MFe9UlE7YHTSJCVpaBkeRYawz5TbCGpFsZBjy4DHu_LNitJyULHyz9Ml68A6ZcP93cM2H/pub?gid=0&single=true&output=csv";
-    
-    // ★ KENDİ WHATSAPP NUMARANI YAZ (90 ile başla, örn: 905551234567) ★
     const PHONE_NUMBER = "90XXXXXXXXX";
+
+    function calculateCountdown(endDateRaw) {
+        let parts = endDateRaw.split('-');
+        if (parts.length === 3) {
+            parts[1] = parts[1].padStart(2, '0');
+            parts[2] = parts[2].padStart(2, '0');
+            endDateRaw = parts.join('-');
+        }
+        const endDate = new Date(endDateRaw + 'T23:59:59');
+        const now = new Date();
+        const diff = endDate - now;
+        
+        if (diff <= 0) return "İndirim bitti";
+        
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (86400000)) / (3600000));
+        const minutes = Math.floor((diff % 3600000) / 60000);
+        const seconds = Math.floor((diff % 60000) / 1000);
+        
+        if (days > 0) return `${days} gün ${hours} saat`;
+        if (hours > 0) return `${hours} saat ${minutes} dk`;
+        if (minutes > 0) return `${minutes} dk ${seconds} sn`;
+        return `${seconds} saniye`;
+    }
+
+    function startCountdown(productId, endDate, elementId) {
+        if (countdownIntervals[productId]) clearInterval(countdownIntervals[productId]);
+        
+        const updateTimer = () => {
+            const timerElement = document.getElementById(elementId);
+            if (timerElement) {
+                const remaining = calculateCountdown(endDate);
+                timerElement.innerHTML = `⏰ Kalan süre: ${remaining}`;
+                if (remaining === "İndirim bitti") {
+                    clearInterval(countdownIntervals[productId]);
+                    location.reload();
+                }
+            }
+        };
+        
+        updateTimer();
+        countdownIntervals[productId] = setInterval(updateTimer, 1000);
+    }
 
     async function loadProducts() {
         const container = document.getElementById("productsContainer");
         container.innerHTML = '<div class="loading">📦 Ürünler yükleniyor...</div>';
         try {
-            console.log("Yükleniyor:", CSV_URL);
             const response = await fetch(CSV_URL);
             if (!response.ok) throw new Error("HTTP " + response.status);
             const text = await response.text();
-            console.log("Gelen veri uzunluğu:", text.length);
             const rows = text.split("\n");
             if (rows.length < 2) throw new Error("Veri yok");
             
@@ -355,7 +388,6 @@
                     let discount = discIdx !== -1 && cols[discIdx] ? parseFloat(cols[discIdx]) : 0;
                     let discountEndRaw = discEndIdx !== -1 && cols[discEndIdx] ? cols[discEndIdx] : "";
                     
-                    // ★ TARİH FORMATINI DÜZELTEN KISIM (2026-5-5 → 2026-05-05) ★
                     let isDiscountValid = false;
                     if (discount > 0 && discountEndRaw) {
                         let fixedDate = discountEndRaw;
@@ -403,6 +435,8 @@
         container.innerHTML = "";
         products.forEach((p, idx) => {
             const hasDiscount = p.discountPercent > 0;
+            const timerId = `timer-${p.id}`;
+            
             const card = document.createElement("div");
             card.className = "product-card";
             card.innerHTML = `
@@ -415,16 +449,19 @@
                         ${hasDiscount ? `<span class="old-price">$${p.price}</span>` : ''}
                         ${hasDiscount ? `<span class="discount-badge">-%${p.discountPercent}</span>` : ''}
                     </div>
-                    ${hasDiscount && p.discountEnd ? `<div class="discount-end">⏰ İndirim ${p.discountEnd}'e kadar</div>` : ''}
+                    ${hasDiscount && p.discountEnd ? `<div class="countdown-timer" id="${timerId}">⏰ Kalan süre: hesaplanıyor...</div>` : ''}
                     <div class="quantity-control">
                         <button class="qty-btn" data-idx="${idx}" data-dir="minus">−</button>
                         <span class="qty-value" id="qty-${idx}">0</span>
                         <button class="qty-btn" data-idx="${idx}" data-dir="plus">+</button>
                     </div>
-                    <button class="add-to-cart" data-idx="${idx}">🛒 Sepete Ekle</button>
                 </div>
             `;
             container.appendChild(card);
+            
+            if (hasDiscount && p.discountEnd) {
+                startCountdown(p.id, p.discountEnd, timerId);
+            }
         });
         
         document.querySelectorAll('.qty-btn').forEach(btn => {
@@ -437,19 +474,11 @@
                 if (dir === 'plus') currentQty++;
                 else if (dir === 'minus' && currentQty > 0) currentQty--;
                 qtySpan.innerText = currentQty;
-            });
-        });
-        
-        document.querySelectorAll('.add-to-cart').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const idx = parseInt(btn.dataset.idx);
-                const qtySpan = document.getElementById(`qty-${idx}`);
-                let quantity = parseInt(qtySpan.innerText);
-                if (quantity > 0) {
-                    addToCart(products[idx], quantity);
+                
+                // ★ MİKTAR DEĞİŞİNCE OTOMATİK SEPETE EKLE ★
+                if (currentQty > 0) {
+                    addToCart(products[idx], currentQty);
                     qtySpan.innerText = 0;
-                } else {
-                    alert("Lütfen miktar seçin");
                 }
             });
         });
@@ -468,6 +497,23 @@
             });
         }
         updateCartUI();
+        
+        // Geri bildirim
+        const toast = document.createElement('div');
+        toast.innerHTML = `✅ ${quantity} adet ${product.name} sepete eklendi`;
+        toast.style.position = 'fixed';
+        toast.style.bottom = '100px';
+        toast.style.left = '20px';
+        toast.style.right = '20px';
+        toast.style.background = '#25D366';
+        toast.style.color = 'white';
+        toast.style.padding = '12px';
+        toast.style.borderRadius = '30px';
+        toast.style.textAlign = 'center';
+        toast.style.zIndex = '1000';
+        toast.style.fontWeight = 'bold';
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2000);
     }
 
     function updateCartUI() {
