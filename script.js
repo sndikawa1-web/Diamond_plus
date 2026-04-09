@@ -3,20 +3,12 @@ let cart = [];
 let countdownIntervals = [];
 let currentFilter = "all";
 let currentSearch = "";
-let activeGiftBox = null;
-let isUpdatingGifts = false; // Hediye güncelleme döngüsünü önlemek için
+let giftProcessed = false; // Hediye işleminin yapılıp yapılmadığını kontrol et
 
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS7N92CcB-MFe9UlE7YHTSJCVpaBkeRYawz5TbCGpFsZBjy4DHu_LNitJyULHyz9Ml68A6ZcP93cM2H/pub?gid=0&single=true&output=csv";
 const PHONE_NUMBER = "9647507165134";
 
 const GIFT_THRESHOLDS = [75, 150, 225, 300, 375];
-
-const GIFT_PROBABILITIES = [
-    { min: 2, max: 3, chance: 75 },
-    { min: 3, max: 3.5, chance: 50 },
-    { min: 3.5, max: 4, chance: 25 },
-    { min: 4, max: 4.5, chance: 10 }
-];
 
 function saveToRecent(product) {
     let recent = JSON.parse(localStorage.getItem('recentProducts') || '[]');
@@ -137,12 +129,12 @@ function updateAddButtonText(idx, quantity, price) {
     }
 }
 
-// Benzersiz rastgele hediye seç (farklı ID'ler)
-function getUniqueRandomGiftProduct(count, excludeIds) {
+// Benzersiz rastgele hediyeler seç
+function getUniqueRandomGifts(count) {
     const availableProducts = products.filter(p => p.price >= 2 && p.price <= 5);
     if (availableProducts.length === 0) return [];
     
-    // Karıştır ve benzersiz seç
+    // Karıştır
     const shuffled = [...availableProducts];
     for (let i = shuffled.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -152,43 +144,14 @@ function getUniqueRandomGiftProduct(count, excludeIds) {
     return shuffled.slice(0, count);
 }
 
-// Kaç hediye hakkı olduğunu hesapla
 function getGiftCount(total) {
     let count = 0;
     for (let threshold of GIFT_THRESHOLDS) {
         if (total >= threshold) count++;
     }
-    return Math.min(count, 5); // Maksimum 5 hediye
+    return Math.min(count, 5);
 }
 
-// Hediyeleri sepete ekle (benzersiz)
-function addGiftsToCart(giftCount) {
-    const existingGiftIds = cart.filter(item => item.isGift).map(item => item.id);
-    const gifts = getUniqueRandomGiftProduct(giftCount, existingGiftIds);
-    
-    // Yeni hediyeleri sepete ekle
-    for (let gift of gifts) {
-        const existing = cart.find(item => item.id === gift.id && item.isGift === true);
-        if (!existing) {
-            cart.push({
-                id: gift.id,
-                name: gift.name,
-                price: 0,
-                quantity: 1,
-                isGift: true
-            });
-        }
-    }
-    
-    return gifts;
-}
-
-// Eski hediyeleri temizle (sadece hediye olanları)
-function removeOldGifts() {
-    cart = cart.filter(item => !item.isGift);
-}
-
-// Hediye pop-up'ını göster
 function showGiftPopup(gifts) {
     const modal = document.getElementById('giftModal');
     const body = document.getElementById('giftModalBody');
@@ -219,43 +182,43 @@ function showGiftPopup(gifts) {
     modal.classList.add('active');
 }
 
-// Hediye sistemini kontrol et
-function checkGiftEligibility() {
-    if (isUpdatingGifts) return;
-    isUpdatingGifts = true;
+function checkAndAddGifts() {
+    // Sadece normal ürünlerin toplamını hesapla (hediyeler hariç)
+    const total = cart.reduce((sum, item) => {
+        if (item.isGift) return sum;
+        return sum + (item.price * item.quantity);
+    }, 0);
     
-    try {
-        const total = cart.reduce((sum, item) => {
-            if (item.isGift) return sum;
-            return sum + (item.price * item.quantity);
-        }, 0);
+    const expectedGiftCount = getGiftCount(total);
+    const currentGiftCount = cart.filter(item => item.isGift).length;
+    
+    console.log(`Toplam: ${total}$, Beklenen hediye: ${expectedGiftCount}, Mevcut hediye: ${currentGiftCount}`);
+    
+    // Beklenen hediyeler mevcut değilse ekle
+    if (expectedGiftCount > 0 && currentGiftCount !== expectedGiftCount) {
+        // Mevcut hediyeleri temizle
+        cart = cart.filter(item => !item.isGift);
         
-        const giftCount = getGiftCount(total);
-        const currentGiftCount = cart.filter(item => item.isGift).length;
+        // Yeni hediyeleri ekle
+        const newGifts = getUniqueRandomGifts(expectedGiftCount);
         
-        // Hediye hakkı yoksa ve hediyeler varsa temizle
-        if (giftCount === 0) {
-            if (currentGiftCount > 0) {
-                removeOldGifts();
-                updateCartUI();
-            }
-            isUpdatingGifts = false;
-            return;
+        for (let gift of newGifts) {
+            cart.push({
+                id: gift.id,
+                name: gift.name,
+                price: 0,
+                quantity: 1,
+                isGift: true
+            });
         }
         
-        // Hediye hakkı değiştiyse güncelle
-        if (giftCount !== currentGiftCount) {
-            removeOldGifts();
-            const gifts = addGiftsToCart(giftCount);
-            updateCartUI();
-            if (gifts.length > 0) {
-                showGiftPopup(gifts);
-            }
+        // Pop-up göster
+        if (newGifts.length > 0) {
+            showGiftPopup(newGifts);
         }
-    } catch(e) {
-        console.error("Hediye hatası:", e);
-    } finally {
-        isUpdatingGifts = false;
+        
+        // Sepet arayüzünü güncelle
+        updateCartUI();
     }
 }
 
@@ -589,11 +552,11 @@ function updateCartUI() {
             else if (dir === 'minus' && cart[idx].quantity > 1) cart[idx].quantity--;
             else if (dir === 'minus' && cart[idx].quantity === 1) cart.splice(idx, 1);
             updateCartUI();
-            setTimeout(() => checkGiftEligibility(), 50);
+            checkAndAddGifts();
         });
     });
     
-    setTimeout(() => checkGiftEligibility(), 50);
+    checkAndAddGifts();
 }
 
 function sendOrder() {
