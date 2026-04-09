@@ -1,127 +1,368 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>Diamond Plus | Premium Alışveriş</title>
+    <meta name="theme-color" content="#0A0A0F">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>DIAMOND PLUS • Premium Store</title>
     
-    <!-- Font Awesome Icons (Opsiyonel ama güzel durur) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts - Premium Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
-    <!-- Ana Stil Dosyası -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<!-- HEADER -->
-<div class="header">
-    <h1><i class="fas fa-gem"></i> DIAMOND PLUS</h1>
-    <p>Premium Ürünler | Güvenli Alışveriş</p>
-</div>
-
-<!-- İNDİRİM BANNER -->
-<div class="discount-banner" id="discountBanner">
-    <i class="fas fa-tag"></i> İNDİRİM FIRSATI! Tıkla, Kaçırma! <i class="fas fa-fire"></i>
-</div>
-
-<!-- ARAMA VE FİLTRE -->
-<div class="search-filter">
-    <div class="search-wrapper">
-        <i class="fas fa-search search-icon"></i>
-        <input type="text" id="searchInput" class="search-box" placeholder="Ürün, kategori veya marka ara...">
-    </div>
-    <div class="filter-buttons">
-        <button class="filter-btn active" data-filter="all"><i class="fas fa-box"></i> Tümü</button>
-        <button class="filter-btn" data-filter="discount"><i class="fas fa-percent"></i> İndirimdekiler</button>
+<!-- PREMIUM LOADING ANIMATION -->
+<div class="page-loader">
+    <div class="loader-content">
+        <div class="diamond-loader">
+            <i class="fas fa-gem"></i>
+        </div>
+        <span class="loader-text">DIAMOND PLUS</span>
     </div>
 </div>
 
-<!-- SON BAKILANLAR -->
-<div id="recentSection" style="display:none;">
-    <div class="section-title"><i class="fas fa-history"></i> SON BAKTIKLARINIZ</div>
-    <div id="recentProducts" class="recent-products"></div>
-</div>
+<!-- FLOATING ORBS - Premium Background Effect -->
+<div class="bg-orb orb-1"></div>
+<div class="bg-orb orb-2"></div>
+<div class="bg-orb orb-3"></div>
 
-<!-- ÜRÜN LİSTESİ -->
-<div class="section-title"><i class="fas fa-star"></i> ÖNE ÇIKAN ÜRÜNLER</div>
-<div id="productsContainer" class="products-grid">
-    <div class="loading-spinner">
-        <div class="spinner"></div>
-        <p>Ürünler yükleniyor...</p>
-    </div>
-</div>
-
-<!-- SEPET BUTONU -->
-<div class="cart-float" id="cartFloat">
-    <span class="cart-icon"><i class="fas fa-shopping-bag"></i></span>
-    <span class="cart-count" id="cartCount">0</span>
-</div>
-
-<!-- SEPET MODAL -->
-<div id="cartModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <div class="modal-title">
-                <i class="fas fa-shopping-cart"></i>
-                <h3>Sepetim</h3>
+<!-- MAIN HEADER - Premium Glassmorphism -->
+<header class="premium-header">
+    <div class="header-top">
+        <div class="header-brand">
+            <div class="brand-icon">
+                <i class="fas fa-crown"></i>
             </div>
-            <div class="modal-header-actions">
-                <!-- Sepeti Boşalt Butonu (Koda eklendi) -->
-                <button id="clearCartBtn" class="clear-cart-btn"><i class="fas fa-trash-alt"></i> Boşalt</button>
-                <button class="close-modal" id="closeModalBtn">&times;</button>
+            <div class="brand-text">
+                <h1 class="brand-name">DIAMOND<span>PLUS</span></h1>
+                <p class="brand-tagline">Luxury Shopping Experience</p>
             </div>
         </div>
-        <ul id="cartModalItems" class="cart-items-list">
-            <li class="empty-cart-message">Sepetinizde ürün bulunmuyor.</li>
-        </ul>
-        <div id="cartModalTotal" class="cart-total">Toplam: $0.00</div>
-        <button id="whatsappOrderBtn" class="whatsapp-order"><i class="fab fa-whatsapp"></i> WhatsApp ile Siparişi Tamamla</button>
+        <div class="header-actions">
+            <button class="icon-btn notification-btn">
+                <i class="far fa-bell"></i>
+                <span class="pulse-dot"></span>
+            </button>
+            <button class="icon-btn wishlist-btn">
+                <i class="far fa-heart"></i>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Premium Welcome Banner -->
+    <div class="welcome-banner">
+        <div class="welcome-content">
+            <span class="welcome-badge">✦ VIP MEMBER ✦</span>
+            <h2 class="welcome-title">Hoş Geldiniz</h2>
+            <p class="welcome-subtitle">Size özel %25 indirim fırsatı</p>
+        </div>
+        <div class="welcome-stats">
+            <div class="stat-item">
+                <span class="stat-value">2.4K</span>
+                <span class="stat-label">Ürün</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+                <span class="stat-value">4.9</span>
+                <span class="stat-label">Puan</span>
+                <i class="fas fa-star stat-star"></i>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- PREMIUM SEARCH SECTION -->
+<div class="search-section">
+    <div class="search-container">
+        <div class="search-input-wrapper">
+            <i class="fas fa-search search-prefix"></i>
+            <input type="text" id="searchInput" class="premium-search" placeholder="Ne aramıştınız?">
+            <button class="search-filter-btn" id="searchFilterToggle">
+                <i class="fas fa-sliders-h"></i>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Category Chips - Premium Scroll -->
+    <div class="category-chips">
+        <div class="chips-scroll">
+            <button class="chip active" data-filter="all">
+                <i class="fas fa-grid-2"></i>
+                <span>Tümü</span>
+            </button>
+            <button class="chip" data-filter="discount">
+                <i class="fas fa-tag"></i>
+                <span>İndirimler</span>
+                <span class="chip-badge">🔥</span>
+            </button>
+            <button class="chip" data-filter="new">
+                <i class="fas fa-sparkles"></i>
+                <span>Yeni</span>
+            </button>
+            <button class="chip" data-filter="popular">
+                <i class="fas fa-fire"></i>
+                <span>Popüler</span>
+            </button>
+            <button class="chip" data-filter="premium">
+                <i class="fas fa-gem"></i>
+                <span>Premium</span>
+            </button>
+        </div>
     </div>
 </div>
 
-<!-- HIZLI BAKIŞ MODAL -->
-<div id="quickviewModal" class="quickview-modal">
-    <div class="quickview-close" id="quickviewClose">&times;</div>
-    <div class="quickview-content">
-        <img id="quickviewImg" class="quickview-img" src="https://via.placeholder.com/400" alt="Ürün Resmi">
-        <div class="quickview-info">
-            <div class="quickview-name" id="quickviewName">Ürün Adı</div>
-            <div class="quickview-price-container">
-                <span class="quickview-current-price" id="quickviewPrice">$0.00</span>
-                <span class="quickview-fake-price" id="quickviewFakePrice"></span>
-                <span class="quickview-discount-badge" id="quickviewDiscount"></span>
+<!-- FLASH SALE BANNER - Premium Countdown Design -->
+<div class="flash-sale-banner" id="discountBanner">
+    <div class="flash-sale-bg">
+        <div class="flash-sale-particles">
+            <span class="particle"></span>
+            <span class="particle"></span>
+            <span class="particle"></span>
+            <span class="particle"></span>
+        </div>
+    </div>
+    <div class="flash-sale-content">
+        <div class="flash-sale-left">
+            <div class="flash-icon">
+                <i class="fas fa-bolt"></i>
             </div>
-            <div class="quickview-desc" id="quickviewDesc"></div>
-            
-            <!-- Hızlı Sepet Ekleme -->
-            <div class="quickview-actions">
-                <div class="quantity-control" style="flex: 2;">
-                    <button class="qty-btn" id="qvMinus">−</button>
-                    <span class="qty-value" id="qvQty">1</span>
-                    <button class="qty-btn" id="qvPlus">+</button>
+            <div class="flash-text">
+                <h3>FLASH SALE</h3>
+                <p>İndirimleri Kaçırma!</p>
+            </div>
+        </div>
+        <div class="flash-sale-right">
+            <span class="flash-cta">Hemen Al <i class="fas fa-arrow-right"></i></span>
+        </div>
+    </div>
+</div>
+
+<!-- RECENTLY VIEWED - Premium Horizontal Scroll -->
+<section class="recent-section" id="recentSection" style="display:none;">
+    <div class="section-header">
+        <div class="header-left">
+            <div class="header-icon">
+                <i class="fas fa-clock-rotate-left"></i>
+            </div>
+            <h2 class="section-title">Son Gezdiklerin</h2>
+        </div>
+        <button class="clear-recent-btn" id="clearRecentBtn">
+            <i class="fas fa-xmark"></i>
+        </button>
+    </div>
+    <div class="recent-scroll" id="recentProducts"></div>
+</section>
+
+<!-- MAIN PRODUCTS GRID -->
+<section class="products-section">
+    <div class="section-header">
+        <div class="header-left">
+            <div class="header-icon">
+                <i class="fas fa-sparkles"></i>
+            </div>
+            <h2 class="section-title">Sizin İçin Seçtiklerimiz</h2>
+        </div>
+        <div class="product-count-badge" id="productCount">0 ürün</div>
+    </div>
+    
+    <div id="productsContainer" class="premium-products-grid">
+        <!-- Dynamic content will be injected here -->
+        <div class="loading-shimmer">
+            <div class="shimmer-card"></div>
+            <div class="shimmer-card"></div>
+            <div class="shimmer-card"></div>
+            <div class="shimmer-card"></div>
+        </div>
+    </div>
+</section>
+
+<!-- FLOATING CART BUTTON - Premium Design -->
+<div class="premium-cart-float" id="cartFloat">
+    <div class="cart-float-bg"></div>
+    <div class="cart-float-content">
+        <i class="fas fa-shopping-bag"></i>
+        <span class="cart-float-count" id="cartCount">0</span>
+    </div>
+    <div class="cart-float-glow"></div>
+</div>
+
+<!-- BOTTOM NAVIGATION - Premium Mobile Menu -->
+<nav class="bottom-nav">
+    <div class="nav-container">
+        <a href="#" class="nav-item active">
+            <i class="fas fa-home"></i>
+            <span>Ana Sayfa</span>
+        </a>
+        <a href="#" class="nav-item">
+            <i class="fas fa-search"></i>
+            <span>Keşfet</span>
+        </a>
+        <a href="#" class="nav-item">
+            <i class="far fa-heart"></i>
+            <span>Favoriler</span>
+        </a>
+        <a href="#" class="nav-item">
+            <i class="far fa-user"></i>
+            <span>Profil</span>
+        </a>
+    </div>
+</nav>
+
+<!-- ==================== MODALS ==================== -->
+
+<!-- CART MODAL - Premium Slide-up -->
+<div id="cartModal" class="premium-modal cart-modal">
+    <div class="modal-overlay"></div>
+    <div class="modal-sheet">
+        <div class="modal-drag-handle"></div>
+        <div class="modal-header-premium">
+            <div class="modal-title-section">
+                <div class="modal-icon">
+                    <i class="fas fa-shopping-bag"></i>
                 </div>
-                <button class="add-to-cart-btn" id="qvAddToCart" style="flex: 3;"><i class="fas fa-cart-plus"></i> Sepete Ekle</button>
+                <div>
+                    <h3>Sepetim</h3>
+                    <p class="modal-subtitle" id="cartItemCount">0 ürün</p>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-action-btn" id="clearCartBtn">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+                <button class="modal-close-btn" id="closeModalBtn">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="modal-body">
+            <ul id="cartModalItems" class="cart-list-premium">
+                <li class="empty-cart-state">
+                    <div class="empty-cart-icon">
+                        <i class="fas fa-shopping-bag"></i>
+                    </div>
+                    <h4>Sepetiniz Boş</h4>
+                    <p>Ürün eklemek için alışverişe başlayın</p>
+                </li>
+            </ul>
+        </div>
+        
+        <div class="modal-footer">
+            <div class="cart-summary">
+                <div class="summary-row">
+                    <span>Ara Toplam</span>
+                    <span id="cartSubtotal">$0.00</span>
+                </div>
+                <div class="summary-row discount-row">
+                    <span>
+                        <i class="fas fa-tag"></i>
+                        İndirim
+                    </span>
+                    <span class="discount-amount">-$0.00</span>
+                </div>
+                <div class="summary-row total-row">
+                    <span>Toplam</span>
+                    <span id="cartModalTotal">$0.00</span>
+                </div>
+            </div>
+            <button id="whatsappOrderBtn" class="premium-order-btn">
+                <i class="fab fa-whatsapp"></i>
+                <span>Siparişi Tamamla</span>
+                <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- QUICK VIEW MODAL - Premium Design -->
+<div id="quickviewModal" class="quickview-premium">
+    <div class="quickview-backdrop"></div>
+    <div class="quickview-sheet">
+        <button class="quickview-close-premium" id="quickviewClose">
+            <i class="fas fa-xmark"></i>
+        </button>
+        
+        <div class="quickview-image-area">
+            <img id="quickviewImg" src="https://via.placeholder.com/400" alt="Product">
+            <div class="quickview-image-badge" id="quickviewDiscountBadge">-30%</div>
+        </div>
+        
+        <div class="quickview-content-area">
+            <div class="quickview-header">
+                <h2 id="quickviewName">Premium Product</h2>
+                <button class="quickview-wishlist">
+                    <i class="far fa-heart"></i>
+                </button>
             </div>
             
-            <div class="quickview-similar">
-                <div class="quickview-similar-title"><i class="fas fa-search"></i> BUNLARA DA BAKTILAR</div>
-                <div id="similarProducts" class="similar-products"></div>
+            <div class="quickview-pricing">
+                <div class="pricing-main">
+                    <span class="current-price" id="quickviewPrice">$0.00</span>
+                    <span class="original-price" id="quickviewFakePrice">$0.00</span>
+                </div>
+                <div class="pricing-installment">
+                    <i class="fas fa-credit-card"></i>
+                    <span>6 taksit seçeneği</span>
+                </div>
+            </div>
+            
+            <p class="quickview-description" id="quickviewDesc">
+                Premium kalite ürün açıklaması burada yer alacak.
+            </p>
+            
+            <div class="quickview-actions-premium">
+                <div class="quantity-selector-premium">
+                    <button class="qty-btn-premium" id="qvMinus">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                    <span class="qty-value-premium" id="qvQty">1</span>
+                    <button class="qty-btn-premium" id="qvPlus">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+                <button class="add-cart-btn-premium" id="qvAddToCart">
+                    <i class="fas fa-shopping-bag"></i>
+                    <span>Sepete Ekle</span>
+                </button>
+            </div>
+            
+            <div class="quickview-similar-premium">
+                <h4>
+                    <i class="fas fa-compass"></i>
+                    Bunlara da göz atın
+                </h4>
+                <div id="similarProducts" class="similar-scroll"></div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- HEDİYE KAZANMA MODAL -->
-<div id="giftModal" class="gift-modal">
-    <div class="gift-modal-content">
-        <div class="gift-modal-close" id="giftModalClose">&times;</div>
-        <div id="giftModalBody" class="gift-modal-body">
-            <!-- Dinamik içerik JS ile doldurulacak -->
+<!-- GIFT MODAL - Premium Celebration Design -->
+<div id="giftModal" class="gift-premium-modal">
+    <div class="gift-backdrop"></div>
+    <div class="gift-card">
+        <div class="gift-confetti">
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <button class="gift-close" id="giftModalClose">
+            <i class="fas fa-xmark"></i>
+        </button>
+        <div id="giftModalBody" class="gift-body-premium">
+            <!-- Dynamic content -->
         </div>
     </div>
 </div>
 
-<!-- Ana JavaScript Dosyası -->
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
+
 <script src="script.js"></script>
 </body>
 </html>
