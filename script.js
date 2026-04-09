@@ -5,7 +5,7 @@ let currentFilter = "all";
 let currentSearch = "";
 let pendingGifts = [];
 let isProcessingGift = false;
-let lastTotal = 0; // Son toplamı takip et
+let lastTotal = 0;
 
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS7N92CcB-MFe9UlE7YHTSJCVpaBkeRYawz5TbCGpFsZBjy4DHu_LNitJyULHyz9Ml68A6ZcP93cM2H/pub?gid=0&single=true&output=csv";
 const PHONE_NUMBER = "9647507165134";
@@ -49,30 +49,22 @@ function displayRecentProducts() {
     });
 }
 
-function getSimilarProducts(product, limit = 4) {
-    const keywords = product.name.toLowerCase().split(' ');
-    const similar = products.filter(p => p.id !== product.id).map(p => {
-        let score = 0;
-        const pName = p.name.toLowerCase();
-        keywords.forEach(keyword => {
-            if (pName.includes(keyword)) score++;
-        });
-        if (Math.abs(p.price - product.price) < 10) score++;
-        return { product: p, score };
-    });
-    similar.sort((a, b) => b.score - a.score);
-    return similar.slice(0, limit).map(s => s.product);
+// ★ TARİH DÜZELTME FONKSİYONU ★
+function fixDateFormat(dateStr) {
+    if (!dateStr) return null;
+    let parts = dateStr.split('-');
+    if (parts.length === 3) {
+        parts[1] = parts[1].padStart(2, '0');
+        parts[2] = parts[2].padStart(2, '0');
+        return parts.join('-');
+    }
+    return dateStr;
 }
 
 function calculateCountdown(endDateRaw) {
     if (!endDateRaw) return null;
-    let parts = endDateRaw.split('-');
-    if (parts.length === 3) {
-        parts[1] = parts[1].padStart(2, '0');
-        parts[2] = parts[2].padStart(2, '0');
-        endDateRaw = parts.join('-');
-    }
-    const endDate = new Date(endDateRaw + 'T23:59:59');
+    let fixedDate = fixDateFormat(endDateRaw);
+    const endDate = new Date(fixedDate + 'T23:59:59');
     const now = new Date();
     const diff = endDate - now;
     
@@ -192,38 +184,28 @@ function checkAndAddGifts() {
         return sum + (item.price * item.quantity);
     }, 0);
     
-    // Toplam değişmediyse tekrar kontrol etme
     if (total === lastTotal) return;
     lastTotal = total;
     
     const expectedGiftCount = getGiftCount(total);
     const currentGiftCount = cart.filter(item => item.isGift).length;
     
-    console.log(`Toplam: ${total}$, Beklenen: ${expectedGiftCount}, Mevcut: ${currentGiftCount}`);
-    
-    // Beklenen hediyeler mevcut değilse
     if (expectedGiftCount > 0 && currentGiftCount !== expectedGiftCount) {
-        // Mevcut hediyeleri temizle
         cart = cart.filter(item => !item.isGift);
         
-        // Yeni hediyeleri bul
         const newGifts = [];
         for (let i = 0; i < expectedGiftCount; i++) {
             const newGift = getRandomGift();
-            if (newGift) {
-                newGifts.push(newGift);
-            }
+            if (newGift) newGifts.push(newGift);
         }
         
         if (newGifts.length > 0) {
-            // Bekleyen hediyelere ekle (sadece yeni eklenenler)
             pendingGifts = newGifts.map((gift, idx) => ({
                 gift: gift,
                 index: idx + 1,
                 total: newGifts.length
             }));
             
-            // Eğer şu anda bir hediye işlemi yoksa başlat
             if (!isProcessingGift && pendingGifts.length > 0) {
                 processNextGift();
             }
@@ -231,36 +213,6 @@ function checkAndAddGifts() {
         
         updateCartUI();
     }
-}
-
-function showQuickView(product) {
-    saveToRecent(product);
-    document.getElementById("quickviewImg").src = product.image || 'https://via.placeholder.com/400?text=Resim+Yok';
-    document.getElementById("quickviewName").innerText = product.name;
-    document.getElementById("quickviewPrice").innerHTML = `$${product.finalPrice} ${product.fakePrice ? `<span style="font-size:14px;text-decoration:line-through;opacity:0.6;">$${product.fakePrice}</span>` : ''}`;
-    
-    const similar = getSimilarProducts(product);
-    const similarContainer = document.getElementById("similarProducts");
-    if (similar.length > 0) {
-        similarContainer.innerHTML = '';
-        similar.forEach(sim => {
-            const div = document.createElement('div');
-            div.className = 'similar-item';
-            div.onclick = (e) => {
-                e.stopPropagation();
-                showQuickView(sim);
-            };
-            div.innerHTML = `
-                <img src="${sim.image || 'https://via.placeholder.com/70'}" onerror="this.src='https://via.placeholder.com/70'">
-                <div class="name">${escapeHtml(sim.name)}</div>
-            `;
-            similarContainer.appendChild(div);
-        });
-    } else {
-        similarContainer.innerHTML = '<div style="font-size:12px;color:#999;">Henüz benzer ürün yok</div>';
-    }
-    
-    document.getElementById("quickviewModal").classList.add("active");
 }
 
 function filterProducts() {
@@ -293,10 +245,8 @@ function renderFilteredProducts(filteredProducts) {
         card.className = "product-card";
         card.setAttribute("data-product-id", p.id);
         card.innerHTML = `
-            <div class="product-img-container">
-                <img class="product-img" src="${p.image || 'https://via.placeholder.com/200?text=Resim+Yok'}" 
-                     onerror="this.src='https://via.placeholder.com/200?text=Resim+Yok'">
-            </div>
+            <img class="product-img" src="${p.image || 'https://via.placeholder.com/200?text=Resim+Yok'}" 
+                 onerror="this.src='https://via.placeholder.com/200?text=Resim+Yok'">
             <div class="product-info">
                 <div class="product-name">${escapeHtml(p.name)}</div>
                 ${p.description ? `<div class="product-description">📝 ${escapeHtml(p.description)}</div>` : ''}
@@ -339,31 +289,6 @@ function attachProductEvents() {
         btn.removeEventListener('click', handleAddToCart);
         btn.addEventListener('click', handleAddToCart);
     });
-    
-    document.querySelectorAll('.product-img-container').forEach(container => {
-        container.removeEventListener('click', handleImageClick);
-        container.addEventListener('click', handleImageClick);
-    });
-    
-    document.querySelectorAll('.product-name, .product-description, .price-container, .countdown-timer, .quantity-control, .add-to-cart').forEach(el => {
-        el.removeEventListener('click', handlePreventClick);
-        el.addEventListener('click', handlePreventClick);
-    });
-}
-
-function handleImageClick(e) {
-    e.stopPropagation();
-    const card = this.closest('.product-card');
-    const productId = card.getAttribute('data-product-id');
-    const product = products.find(p => p.id === productId);
-    if (product) {
-        saveToRecent(product);
-        showQuickView(product);
-    }
-}
-
-function handlePreventClick(e) {
-    e.stopPropagation();
 }
 
 function handlePlusClick(e) {
@@ -417,6 +342,8 @@ async function loadProducts() {
         if (rows.length < 2) throw new Error("Veri yok");
         
         const headers = rows[0].toLowerCase().split(",");
+        console.log("Sütun başlıkları:", headers);
+        
         const idIdx = headers.indexOf("id");
         const nameIdx = headers.indexOf("name");
         const priceIdx = headers.indexOf("price");
@@ -449,15 +376,10 @@ async function loadProducts() {
                 const description = descIdx !== -1 ? cols[descIdx] : "";
                 const fakePrice = fakePriceIdx !== -1 && cols[fakePriceIdx] ? parseFloat(cols[fakePriceIdx]) : null;
                 
+                // ★ TARİH DÜZELTME ★
                 let isDiscountValid = false;
                 if (discount > 0 && discountEndRaw) {
-                    let fixedDate = discountEndRaw;
-                    let parts = fixedDate.split('-');
-                    if (parts.length === 3) {
-                        parts[1] = parts[1].padStart(2, '0');
-                        parts[2] = parts[2].padStart(2, '0');
-                        fixedDate = parts.join('-');
-                    }
+                    const fixedDate = fixDateFormat(discountEndRaw);
                     const today = new Date().toISOString().slice(0,10);
                     if (fixedDate >= today) isDiscountValid = true;
                 } else if (discount > 0 && !discountEndRaw) {
@@ -480,6 +402,9 @@ async function loadProducts() {
                 }
             }
         }
+        
+        console.log("Toplam ürün:", products.length);
+        console.log("İndirimli ürün sayısı:", products.filter(p => p.discountPercent > 0).length);
         
         if (products.length === 0) {
             container.innerHTML = '<div class="empty-products">⚠️ Ürün bulunamadı.<br>Google Sheets kontrol edin.</div>';
@@ -620,24 +545,10 @@ document.getElementById("discountBanner").addEventListener("click", () => {
     showToast("🏷️ İndirimli ürünler listeleniyor!");
 });
 
-document.getElementById("quickviewClose").addEventListener("click", () => {
-    document.getElementById("quickviewModal").classList.remove("active");
-});
-
-document.getElementById("quickviewModal").addEventListener("click", (e) => {
-    if (e.target === document.getElementById("quickviewModal")) {
-        document.getElementById("quickviewModal").classList.remove("active");
-    }
-});
-
-// ★ DÜZELTİLDİ: Pop-up kapanınca sıradaki hediye gelir, ANCAK sadece kalan varsa
 document.getElementById("giftModalClose").addEventListener("click", () => {
     document.getElementById("giftModal").classList.remove("active");
-    // Kalan hediye varsa ve işlem devam ediyorsa devam et
     if (pendingGifts.length > 0 && isProcessingGift) {
-        setTimeout(() => {
-            processNextGift();
-        }, 300);
+        setTimeout(() => processNextGift(), 300);
     } else {
         isProcessingGift = false;
     }
@@ -647,9 +558,7 @@ document.getElementById("giftModal").addEventListener("click", (e) => {
     if (e.target === document.getElementById("giftModal")) {
         document.getElementById("giftModal").classList.remove("active");
         if (pendingGifts.length > 0 && isProcessingGift) {
-            setTimeout(() => {
-                processNextGift();
-            }, 300);
+            setTimeout(() => processNextGift(), 300);
         } else {
             isProcessingGift = false;
         }
