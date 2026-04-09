@@ -49,7 +49,6 @@ function displayRecentProducts() {
     });
 }
 
-// ★ TARİH DÜZELTME FONKSİYONU ★
 function fixDateFormat(dateStr) {
     if (!dateStr) return null;
     let parts = dateStr.split('-');
@@ -376,7 +375,6 @@ async function loadProducts() {
                 const description = descIdx !== -1 ? cols[descIdx] : "";
                 const fakePrice = fakePriceIdx !== -1 && cols[fakePriceIdx] ? parseFloat(cols[fakePriceIdx]) : null;
                 
-                // ★ TARİH DÜZELTME ★
                 let isDiscountValid = false;
                 if (discount > 0 && discountEndRaw) {
                     const fixedDate = fixDateFormat(discountEndRaw);
@@ -433,6 +431,18 @@ function addToCart(product, quantity, isGift = false) {
         });
     }
     updateCartUI();
+}
+
+// ★ SEPETİ TAMAMEN BOŞALT ★
+function clearCart() {
+    cart = [];
+    pendingGifts = [];
+    isProcessingGift = false;
+    lastTotal = 0;
+    giftUsed1 = false;
+    giftUsed2 = false;
+    updateCartUI();
+    showToast("🗑️ Sepet tamamen boşaltıldı");
 }
 
 function updateCartUI() {
@@ -570,5 +580,28 @@ document.getElementById("cartFloat").onclick = () => { updateCartUI(); modal.cla
 document.getElementById("closeModalBtn").onclick = () => modal.classList.remove("active");
 modal.onclick = (e) => { if (e.target === modal) modal.classList.remove("active"); };
 document.getElementById("whatsappOrderBtn").onclick = sendOrder;
+
+// ★ Sepeti boşaltmak için buton eklendi (modal içinde) ★
+// Modal içine bir "Sepeti Boşalt" butonu ekleyelim
+const modalHeader = document.querySelector('.modal-header');
+if (modalHeader && !document.getElementById('clearCartBtn')) {
+    const clearBtn = document.createElement('button');
+    clearBtn.id = 'clearCartBtn';
+    clearBtn.innerText = '🗑️ Boşalt';
+    clearBtn.style.background = '#e74c3c';
+    clearBtn.style.color = 'white';
+    clearBtn.style.border = 'none';
+    clearBtn.style.padding = '8px 15px';
+    clearBtn.style.borderRadius = '30px';
+    clearBtn.style.fontWeight = 'bold';
+    clearBtn.style.cursor = 'pointer';
+    clearBtn.style.marginLeft = '10px';
+    clearBtn.onclick = () => {
+        if (confirm('Sepeti tamamen boşaltmak istediğinize emin misiniz?')) {
+            clearCart();
+        }
+    };
+    modalHeader.appendChild(clearBtn);
+}
 
 loadProducts();
