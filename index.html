@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>Diamond Plus | Alışveriş</title>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -308,6 +309,77 @@
             font-weight: bold;
             animation: slideUp 0.3s ease;
         }
+        
+        /* Sipariş özeti resmi için gizli alan - tamamen görünmez */
+        .order-invoice {
+            position: fixed;
+            left: -9999px;
+            top: 0;
+            width: 450px;
+            background: linear-gradient(135deg, #0f0c29, #302b63);
+            border-radius: 25px;
+            padding: 25px;
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            z-index: -1;
+        }
+        .order-invoice h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 26px;
+            letter-spacing: 2px;
+        }
+        .order-invoice .invoice-subtitle {
+            text-align: center;
+            font-size: 12px;
+            opacity: 0.7;
+            margin-bottom: 25px;
+        }
+        .order-invoice .invoice-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.15);
+        }
+        .order-invoice .invoice-item-img {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 12px;
+            background: #f5f5f5;
+        }
+        .order-invoice .invoice-item-info {
+            flex: 1;
+        }
+        .order-invoice .invoice-item-name {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .order-invoice .invoice-item-detail {
+            font-size: 12px;
+            opacity: 0.8;
+            margin-top: 4px;
+        }
+        .order-invoice .invoice-item-price {
+            text-align: right;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .order-invoice .invoice-total {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 2px solid #e67e22;
+            text-align: right;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .order-invoice .invoice-date {
+            text-align: center;
+            font-size: 10px;
+            opacity: 0.5;
+            margin-top: 15px;
+        }
     </style>
 </head>
 <body>
@@ -332,8 +404,17 @@
         </div>
         <ul id="cartModalItems" class="cart-items-list"><li>Sepetiniz boş</li></ul>
         <div id="cartModalTotal" class="cart-total">Toplam: $0</div>
-        <button id="whatsappOrderBtn" class="whatsapp-order">📲 WhatsApp ile Sipariş Gönder</button>
+        <button id="whatsappOrderBtn" class="whatsapp-order">📸 Siparişi Resim Olarak Gönder</button>
     </div>
+</div>
+
+<!-- Sipariş faturası için gizli alan (tamamen görünmez) -->
+<div id="orderInvoice" class="order-invoice">
+    <h2>💎 DIAMOND PLUS</h2>
+    <div class="invoice-subtitle">SİPARİŞ ÖZETİ</div>
+    <div id="invoiceItems"></div>
+    <div id="invoiceTotal" class="invoice-total"></div>
+    <div class="invoice-date" id="invoiceDate"></div>
 </div>
 
 <script>
@@ -387,12 +468,13 @@
         countdownIntervals[productId] = setInterval(updateTimer, 1000);
     }
 
-    function showToast(message) {
+    function showToast(message, isError = false) {
         const toast = document.createElement('div');
         toast.className = 'toast';
+        toast.style.background = isError ? '#e74c3c' : '#25D366';
         toast.innerText = message;
         document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 2000);
+        setTimeout(() => toast.remove(), 3000);
     }
 
     function updateAddButtonText(idx, quantity, price) {
@@ -407,22 +489,91 @@
         }
     }
 
-    function sendOrder() {
-        if (cart.length === 0) return alert("Sepetiniz boş!");
+    // Sipariş resmini oluştur
+    async function sendOrderAsImage() {
+        if (cart.length === 0) {
+            showToast("⚠️ Sepetiniz boş!", true);
+            return;
+        }
         
-        let msg = "💎 YENİ SİPARİŞ (Diamond Plus)%0A%0A";
+        showToast("📸 Sipariş özeti hazırlanıyor...");
+        
+        // Fatura alanını doldur
+        const invoiceItemsDiv = document.getElementById("invoiceItems");
+        const invoiceTotalDiv = document.getElementById("invoiceTotal");
+        const invoiceDateSpan = document.getElementById("invoiceDate");
+        
+        let itemsHtml = "";
         let total = 0;
         
-        cart.forEach(item => {
+        for (const item of cart) {
             const itemTotal = item.price * item.quantity;
             total += itemTotal;
-            msg += `🛍️ ${item.name} x ${item.quantity} = $${itemTotal.toFixed(2)}%0A`;
-        });
+            
+            // Ürün resmini bul
+            const product = products.find(p => p.id === item.id);
+            const productImage = product?.image || "https://via.placeholder.com/60?text=Resim+Yok";
+            
+            itemsHtml += `
+                <div class="invoice-item">
+                    <img class="invoice-item-img" src="${productImage}" onerror="this.src='https://via.placeholder.com/60?text=Resim+Yok'">
+                    <div class="invoice-item-info">
+                        <div class="invoice-item-name">${escapeHtml(item.name)}</div>
+                        <div class="invoice-item-detail">${item.quantity} adet x $${item.price}</div>
+                    </div>
+                    <div class="invoice-item-price">$${itemTotal.toFixed(2)}</div>
+                </div>
+            `;
+        }
         
-        msg += `%0A📦 TOPLAM: $${total.toFixed(2)}%0A%0A👤 Müşteri Bilgileri:%0AAd Soyad: %0ATelefon: %0AAdres:`;
+        invoiceItemsDiv.innerHTML = itemsHtml;
+        invoiceTotalDiv.innerHTML = `📦 TOPLAM: $${total.toFixed(2)}`;
+        invoiceDateSpan.innerHTML = new Date().toLocaleString('tr-TR');
         
-        // WhatsApp'a yönlendir
-        window.open(`https://wa.me/${PHONE_NUMBER}?text=${encodeURIComponent(msg)}`);
+        // Gizli alanı geçici olarak görünür yap (resim çekmek için, ama ekranda görünmeyecek)
+        const invoiceDiv = document.getElementById("orderInvoice");
+        invoiceDiv.style.left = "0";
+        invoiceDiv.style.top = "0";
+        invoiceDiv.style.position = "fixed";
+        invoiceDiv.style.zIndex = "-1"; // Görünmez ama render edilir
+        invoiceDiv.style.opacity = "0"; // Tamamen görünmez
+        
+        // Render için bekle
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        try {
+            const canvas = await html2canvas(invoiceDiv, {
+                scale: 2,
+                backgroundColor: null,
+                logging: false,
+                useCORS: true,
+                allowTaint: false
+            });
+            
+            // Gizli alanı tekrar gizle
+            invoiceDiv.style.left = "-9999px";
+            invoiceDiv.style.opacity = "1";
+            invoiceDiv.style.zIndex = "-1";
+            
+            // Resmi indir
+            const imageData = canvas.toDataURL("image/png");
+            const link = document.createElement('a');
+            link.download = `siparis_${new Date().getTime()}.png`;
+            link.href = imageData;
+            link.click();
+            
+            showToast("✅ Sipariş resmi indirildi! Şimdi WhatsApp'a gönderebilirsiniz.");
+            
+            // WhatsApp'ı aç
+            setTimeout(() => {
+                window.open(`https://wa.me/${PHONE_NUMBER}?text=${encodeURIComponent("💎 Merhaba, sipariş resmi ekte. Teşekkürler!")}`);
+            }, 500);
+            
+        } catch(e) {
+            console.error("Resim oluşturma hatası:", e);
+            invoiceDiv.style.left = "-9999px";
+            showToast("❌ Resim oluşturulamadı, lütfen tekrar deneyin", true);
+        }
     }
 
     async function loadProducts() {
@@ -582,7 +733,7 @@
                     const productPrice = parseFloat(products[idx].finalPrice);
                     updateAddButtonText(idx, 0, productPrice);
                 } else {
-                    showToast("⚠️ Lütfen önce miktar seçin");
+                    showToast("⚠️ Lütfen önce miktar seçin", true);
                 }
             });
         });
@@ -661,7 +812,7 @@
     document.getElementById("cartFloat").onclick = () => { updateCartUI(); modal.classList.add("active"); };
     document.getElementById("closeModalBtn").onclick = () => modal.classList.remove("active");
     modal.onclick = (e) => { if (e.target === modal) modal.classList.remove("active"); };
-    document.getElementById("whatsappOrderBtn").onclick = sendOrder;
+    document.getElementById("whatsappOrderBtn").onclick = sendOrderAsImage;
     
     loadProducts();
 </script>
