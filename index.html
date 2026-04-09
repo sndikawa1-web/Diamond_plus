@@ -35,7 +35,6 @@
             margin-top: 5px;
         }
 
-        /* Arama ve Filtre Alanı */
         .search-filter {
             padding: 15px;
             background: white;
@@ -80,7 +79,6 @@
             transform: scale(0.96);
         }
 
-        /* İndirim Banner'ı */
         .discount-banner {
             background: linear-gradient(135deg, #e74c3c, #e67e22);
             color: white;
@@ -375,7 +373,6 @@
             animation: slideUp 0.3s ease;
         }
 
-        /* Hızlı Görünüm Pop-up */
         .quickview-modal {
             display: none;
             position: fixed;
@@ -446,12 +443,10 @@
     <p>Premium Ürünler | 💲 Dolar Fiyatları</p>
 </div>
 
-<!-- İndirim Banner'ı -->
 <div class="discount-banner" id="discountBanner">
     <span>🏷️ İNDİRİM FIRSATI!</span> Tıkla, kaçırma! 🔥
 </div>
 
-<!-- Arama ve Filtre -->
 <div class="search-filter">
     <input type="text" id="searchInput" class="search-box" placeholder="🔍 Ürün ara...">
     <div class="filter-buttons">
@@ -479,7 +474,6 @@
     </div>
 </div>
 
-<!-- Hızlı Görünüm Pop-up -->
 <div id="quickviewModal" class="quickview-modal">
     <div class="quickview-close" id="quickviewClose">&times;</div>
     <div class="quickview-content">
@@ -499,7 +493,7 @@
     let currentSearch = "";
 
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS7N92CcB-MFe9UlE7YHTSJCVpaBkeRYawz5TbCGpFsZBjy4DHu_LNitJyULHyz9Ml68A6ZcP93cM2H/pub?gid=0&single=true&output=csv";
-    const PHONE_NUMBER = "9647507165134";
+    const PHONE_NUMBER = "905647507165134";
 
     function calculateCountdown(endDateRaw) {
         if (!endDateRaw) return null;
@@ -568,15 +562,20 @@
         }
     }
 
+    function showQuickView(product) {
+        document.getElementById("quickviewImg").src = product.image || 'https://via.placeholder.com/400?text=Resim+Yok';
+        document.getElementById("quickviewName").innerText = product.name;
+        document.getElementById("quickviewPrice").innerHTML = `$${product.finalPrice} ${product.discountPercent > 0 ? `<span style="font-size:14px;text-decoration:line-through;opacity:0.6;">$${product.price}</span>` : ''}`;
+        document.getElementById("quickviewModal").classList.add("active");
+    }
+
     function filterProducts() {
         let filtered = [...products];
         
-        // Filtre uygula
         if (currentFilter === "discount") {
             filtered = filtered.filter(p => p.discountPercent > 0);
         }
         
-        // Arama uygula
         if (currentSearch.trim() !== "") {
             const searchLower = currentSearch.toLowerCase();
             filtered = filtered.filter(p => p.name.toLowerCase().includes(searchLower));
@@ -594,7 +593,6 @@
         
         container.innerHTML = "";
         filteredProducts.forEach((p, idx) => {
-            // Orijinal index'i bul
             const originalIdx = products.findIndex(prod => prod.id === p.id);
             const hasDiscount = p.discountPercent > 0;
             const timerId = `timer-${p.id}`;
@@ -649,20 +647,8 @@
         });
         
         document.querySelectorAll('.product-card').forEach(card => {
-            card.removeEventListener('click', handleQuickView);
-            card.addEventListener('click', (e) => {
-                // Butonlara tıklandıysa açılmasın
-                if (e.target.classList.contains('qty-btn') || 
-                    e.target.classList.contains('add-to-cart') ||
-                    e.target.classList.contains('qty-value')) {
-                    return;
-                }
-                const productId = card.getAttribute('data-product-id');
-                const product = products.find(p => p.id === productId);
-                if (product) {
-                    showQuickView(product);
-                }
-            });
+            card.removeEventListener('click', handleCardClick);
+            card.addEventListener('click', handleCardClick);
         });
     }
 
@@ -691,6 +677,7 @@
     }
 
     function handleAddToCart(e) {
+        e.stopPropagation();
         const idx = parseInt(e.target.dataset.idx);
         const qtySpan = document.getElementById(`qty-${idx}`);
         let quantity = parseInt(qtySpan.innerText);
@@ -705,11 +692,17 @@
         }
     }
 
-    function showQuickView(product) {
-        document.getElementById("quickviewImg").src = product.image || 'https://via.placeholder.com/400?text=Resim+Yok';
-        document.getElementById("quickviewName").innerText = product.name;
-        document.getElementById("quickviewPrice").innerHTML = `$${product.finalPrice} ${product.discountPercent > 0 ? `<span style="font-size:14px;text-decoration:line-through;opacity:0.6;">$${product.price}</span>` : ''}`;
-        document.getElementById("quickviewModal").classList.add("active");
+    function handleCardClick(e) {
+        if (e.target.classList.contains('qty-btn') || 
+            e.target.classList.contains('add-to-cart') ||
+            e.target.classList.contains('qty-value')) {
+            return;
+        }
+        const productId = this.getAttribute('data-product-id');
+        const product = products.find(p => p.id === productId);
+        if (product) {
+            showQuickView(product);
+        }
     }
 
     async function loadProducts() {
@@ -875,7 +868,6 @@
         });
     }
 
-    // Event Listeners
     document.getElementById("searchInput").addEventListener("input", (e) => {
         currentSearch = e.target.value;
         filterProducts();
