@@ -3,7 +3,8 @@ let cart = [];
 let countdownIntervals = [];
 let currentFilter = "all";
 let currentSearch = "";
-let giftProcessed = false; // Hediye işleminin yapılıp yapılmadığını kontrol et
+let pendingGifts = []; // Bekleyen hediyeler
+let isProcessingGift = false; // Hediye işlemi devam ediyor mu?
 
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS7N92CcB-MFe9UlE7YHTSJCVpaBkeRYawz5TbCGpFsZBjy4DHu_LNitJyULHyz9Ml68A6ZcP93cM2H/pub?gid=0&single=true&output=csv";
 const PHONE_NUMBER = "9647507165134";
@@ -129,19 +130,11 @@ function updateAddButtonText(idx, quantity, price) {
     }
 }
 
-// Benzersiz rastgele hediyeler seç
-function getUniqueRandomGifts(count) {
+function getUniqueRandomGift() {
     const availableProducts = products.filter(p => p.price >= 2 && p.price <= 5);
-    if (availableProducts.length === 0) return [];
-    
-    // Karıştır
-    const shuffled = [...availableProducts];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    
-    return shuffled.slice(0, count);
+    if (availableProducts.length === 0) return null;
+    const randomIndex = Math.floor(Math.random() * availableProducts.length);
+    return availableProducts[randomIndex];
 }
 
 function getGiftCount(total) {
@@ -152,38 +145,48 @@ function getGiftCount(total) {
     return Math.min(count, 5);
 }
 
-function showGiftPopup(gifts) {
+function showSingleGiftPopup(gift) {
     const modal = document.getElementById('giftModal');
     const body = document.getElementById('giftModalBody');
     
     if (!modal || !body) return;
     
-    let giftsHtml = '';
-    gifts.forEach(gift => {
-        giftsHtml += `
-            <div style="display:inline-block; margin:10px; text-align:center; width:120px;">
-                <img src="${gift.image || 'https://via.placeholder.com/100'}" style="width:100px; height:100px; object-fit:cover; border-radius:15px;" onerror="this.src='https://via.placeholder.com/100'">
-                <p style="margin-top:5px; font-size:12px;">${escapeHtml(gift.name)}</p>
-                <p style="font-size:11px; color:#ffd700;">🎁 0$</p>
-            </div>
-        `;
-    });
-    
     body.innerHTML = `
         <h2>🎉 TEBRİKLER! 🎉</h2>
-        <p>Kazandığın hediyeler:</p>
-        <div style="display:flex; flex-wrap:wrap; justify-content:center; margin:15px 0;">
-            ${giftsHtml}
-        </div>
-        <div class="gift-price">🎁 ÜCRETSİZ HEDİYE 🎁</div>
-        <p style="margin-top:15px; font-size:14px;">Hediyeler sepete eklendi! 🛒</p>
+        <img src="${gift.image || 'https://via.placeholder.com/150'}" style="width:150px; height:150px; object-fit:cover; border-radius:20px; margin:15px auto; border:3px solid white;" onerror="this.src='https://via.placeholder.com/150'">
+        <p><strong>${escapeHtml(gift.name)}</strong> hediyesini kazandın!</p>
+        <div class="gift-price">🎁 0$ (ÜCRETSİZ)</div>
+        <p style="margin-top:15px; font-size:14px;">Hediye sepete eklendi! 🛒</p>
     `;
     
     modal.classList.add('active');
 }
 
+function processNextGift() {
+    if (pendingGifts.length === 0) {
+        isProcessingGift = false;
+        return;
+    }
+    
+    isProcessingGift = true;
+    const gift = pendingGifts.shift();
+    
+    // Hediyeyi sepete ekle
+    cart.push({
+        id: gift.id,
+        name: gift.name,
+        price: 0,
+        quantity: 1,
+        isGift: true
+    });
+    
+    // Pop-up göster
+    showSingleGiftPopup(gift);
+    updateCartUI();
+}
+
 function checkAndAddGifts() {
-    // Sadece normal ürünlerin toplamını hesapla (hediyeler hariç)
+    // Sadece normal ürünlerin toplamını hesapla
     const total = cart.reduce((sum, item) => {
         if (item.isGift) return sum;
         return sum + (item.price * item.quantity);
@@ -192,33 +195,25 @@ function checkAndAddGifts() {
     const expectedGiftCount = getGiftCount(total);
     const currentGiftCount = cart.filter(item => item.isGift).length;
     
-    console.log(`Toplam: ${total}$, Beklenen hediye: ${expectedGiftCount}, Mevcut hediye: ${currentGiftCount}`);
+    console.log(`Toplam: ${total}$, Beklenen: ${expectedGiftCount}, Mevcut: ${currentGiftCount}`);
     
-    // Beklenen hediyeler mevcut değilse ekle
-    if (expectedGiftCount > 0 && currentGiftCount !== expectedGiftCount) {
-        // Mevcut hediyeleri temizle
-        cart = cart.filter(item => !item.isGift);
-        
-        // Yeni hediyeleri ekle
-        const newGifts = getUniqueRandomGifts(expectedGiftCount);
-        
-        for (let gift of newGifts) {
-            cart.push({
-                id: gift.id,
-                name: gift.name,
-                price: 0,
-                quantity: 1,
-                isGift: true
-            });
+    if (expectedGiftCount > currentGiftCount) {
+        // Yeni hediyeleri bul
+        const newGifts = [];
+        for (let i = 0; i < (expectedGiftCount - currentGiftCount); i++) {
+            const newGift = getUniqueRandomGift();
+            if (newGift) newGifts.push(newGift);
         }
         
-        // Pop-up göster
         if (newGifts.length > 0) {
-            showGiftPopup(newGifts);
+            // Bekleyen hediyelere ekle
+            pendingGifts.push(...newGifts);
+            
+            // Eğer şu anda bir hediye işlemi yoksa başlat
+            if (!isProcessingGift) {
+                processNextGift();
+            }
         }
-        
-        // Sepet arayüzünü güncelle
-        updateCartUI();
     }
 }
 
@@ -622,11 +617,26 @@ document.getElementById("quickviewModal").addEventListener("click", (e) => {
 
 document.getElementById("giftModalClose").addEventListener("click", () => {
     document.getElementById("giftModal").classList.remove("active");
+    // Pop-up kapanınca sıradaki hediyeyi göster
+    setTimeout(() => {
+        if (pendingGifts.length > 0) {
+            processNextGift();
+        } else {
+            isProcessingGift = false;
+        }
+    }, 300);
 });
 
 document.getElementById("giftModal").addEventListener("click", (e) => {
     if (e.target === document.getElementById("giftModal")) {
         document.getElementById("giftModal").classList.remove("active");
+        setTimeout(() => {
+            if (pendingGifts.length > 0) {
+                processNextGift();
+            } else {
+                isProcessingGift = false;
+            }
+        }, 300);
     }
 });
 
