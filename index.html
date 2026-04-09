@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>Diamond Plus | Alışveriş</title>
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -21,7 +20,7 @@
         .header {
             background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
             color: white;
-            padding: 25px 20px;
+            padding: 20px 20px;
             text-align: center;
             border-radius: 0 0 30px 30px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
@@ -34,6 +33,71 @@
             font-size: 0.85rem;
             opacity: 0.8;
             margin-top: 5px;
+        }
+
+        /* Arama ve Filtre Alanı */
+        .search-filter {
+            padding: 15px;
+            background: white;
+            margin: 15px;
+            border-radius: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .search-box {
+            width: 100%;
+            padding: 12px 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 30px;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s;
+        }
+        .search-box:focus {
+            border-color: #e67e22;
+            box-shadow: 0 0 0 3px rgba(230,126,34,0.1);
+        }
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+        .filter-btn {
+            background: #f0f2f5;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .filter-btn.active {
+            background: #e67e22;
+            color: white;
+        }
+        .filter-btn:active {
+            transform: scale(0.96);
+        }
+
+        /* İndirim Banner'ı */
+        .discount-banner {
+            background: linear-gradient(135deg, #e74c3c, #e67e22);
+            color: white;
+            text-align: center;
+            padding: 12px;
+            margin: 15px;
+            border-radius: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+            box-shadow: 0 4px 12px rgba(231,76,60,0.3);
+        }
+        .discount-banner:active {
+            transform: scale(0.98);
+        }
+        .discount-banner span {
+            font-size: 18px;
         }
 
         .products-grid {
@@ -49,6 +113,7 @@
             overflow: hidden;
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
             transition: transform 0.2s;
+            cursor: pointer;
         }
         .product-card:active {
             transform: scale(0.98);
@@ -309,77 +374,68 @@
             font-weight: bold;
             animation: slideUp 0.3s ease;
         }
-        
-        /* Sipariş özeti resmi için tamamen gizli alan */
-        .order-invoice-hidden {
+
+        /* Hızlı Görünüm Pop-up */
+        .quickview-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+        }
+        .quickview-modal.active {
+            display: flex;
+        }
+        .quickview-content {
+            background: white;
+            width: 90%;
+            max-width: 400px;
+            border-radius: 30px;
+            overflow: hidden;
+            animation: zoomIn 0.3s ease;
+        }
+        @keyframes zoomIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .quickview-img {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            object-fit: cover;
+        }
+        .quickview-info {
+            padding: 20px;
+        }
+        .quickview-name {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .quickview-price {
+            font-size: 24px;
+            color: #e67e22;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        .quickview-close {
             position: absolute;
-            left: -9999px;
-            top: -9999px;
-            width: 450px;
-            background: linear-gradient(135deg, #0f0c29, #302b63);
-            border-radius: 25px;
-            padding: 25px;
-            color: white;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            opacity: 0;
-            pointer-events: none;
-        }
-        .order-invoice-hidden h2 {
-            text-align: center;
-            margin-bottom: 20px;
-            font-size: 26px;
-            letter-spacing: 2px;
-        }
-        .order-invoice-hidden .invoice-subtitle {
-            text-align: center;
-            font-size: 12px;
-            opacity: 0.7;
-            margin-bottom: 25px;
-        }
-        .order-invoice-hidden .invoice-item {
+            top: 20px;
+            right: 20px;
+            background: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 20px;
             display: flex;
             align-items: center;
-            gap: 15px;
-            padding: 12px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.15);
-        }
-        .order-invoice-hidden .invoice-item-img {
-            width: 60px;
-            height: 60px;
-            object-fit: cover;
-            border-radius: 12px;
-            background: #f5f5f5;
-        }
-        .order-invoice-hidden .invoice-item-info {
-            flex: 1;
-        }
-        .order-invoice-hidden .invoice-item-name {
-            font-weight: 600;
-            font-size: 14px;
-        }
-        .order-invoice-hidden .invoice-item-detail {
-            font-size: 12px;
-            opacity: 0.8;
-            margin-top: 4px;
-        }
-        .order-invoice-hidden .invoice-item-price {
-            text-align: right;
-            font-weight: bold;
-            font-size: 14px;
-        }
-        .order-invoice-hidden .invoice-total {
-            margin-top: 20px;
-            padding-top: 15px;
-            border-top: 2px solid #e67e22;
-            text-align: right;
-            font-size: 18px;
-            font-weight: bold;
-        }
-        .order-invoice-hidden .invoice-date {
-            text-align: center;
-            font-size: 10px;
-            opacity: 0.5;
-            margin-top: 15px;
+            justify-content: center;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         }
     </style>
 </head>
@@ -388,6 +444,20 @@
 <div class="header">
     <h1>💎 DIAMOND PLUS</h1>
     <p>Premium Ürünler | 💲 Dolar Fiyatları</p>
+</div>
+
+<!-- İndirim Banner'ı -->
+<div class="discount-banner" id="discountBanner">
+    <span>🏷️ İNDİRİM FIRSATI!</span> Tıkla, kaçırma! 🔥
+</div>
+
+<!-- Arama ve Filtre -->
+<div class="search-filter">
+    <input type="text" id="searchInput" class="search-box" placeholder="🔍 Ürün ara...">
+    <div class="filter-buttons">
+        <button class="filter-btn active" data-filter="all">📦 Tüm Ürünler</button>
+        <button class="filter-btn" data-filter="discount">🏷️ İndirimdekiler</button>
+    </div>
 </div>
 
 <div id="productsContainer" class="products-grid">Ürünler yükleniyor...</div>
@@ -405,25 +475,34 @@
         </div>
         <ul id="cartModalItems" class="cart-items-list"><li>Sepetiniz boş</li></ul>
         <div id="cartModalTotal" class="cart-total">Toplam: $0</div>
-        <button id="whatsappOrderBtn" class="whatsapp-order">📸 Siparişi Resimli Gönder</button>
+        <button id="whatsappOrderBtn" class="whatsapp-order">📲 WhatsApp ile Sipariş Gönder</button>
     </div>
 </div>
 
-<!-- Sipariş özeti resmi için tamamen gizli alan -->
-<div id="orderInvoiceHidden" class="order-invoice-hidden"></div>
+<!-- Hızlı Görünüm Pop-up -->
+<div id="quickviewModal" class="quickview-modal">
+    <div class="quickview-close" id="quickviewClose">&times;</div>
+    <div class="quickview-content">
+        <img id="quickviewImg" class="quickview-img" src="">
+        <div class="quickview-info">
+            <div class="quickview-name" id="quickviewName"></div>
+            <div class="quickview-price" id="quickviewPrice"></div>
+        </div>
+    </div>
+</div>
 
 <script>
     let products = [];
     let cart = [];
     let countdownIntervals = [];
+    let currentFilter = "all";
+    let currentSearch = "";
 
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS7N92CcB-MFe9UlE7YHTSJCVpaBkeRYawz5TbCGpFsZBjy4DHu_LNitJyULHyz9Ml68A6ZcP93cM2H/pub?gid=0&single=true&output=csv";
-    
-    // ★ BİLGİLERİNİZ ★
     const PHONE_NUMBER = "9647507165134";
-    const IMGBB_API_KEY = "ba463219fce05ebad9c7687ec1efa431";
 
     function calculateCountdown(endDateRaw) {
+        if (!endDateRaw) return null;
         let parts = endDateRaw.split('-');
         if (parts.length === 3) {
             parts[1] = parts[1].padStart(2, '0');
@@ -454,10 +533,12 @@
             const timerElement = document.getElementById(elementId);
             if (timerElement) {
                 const remaining = calculateCountdown(endDate);
-                timerElement.innerHTML = `⏰ Kalan süre: ${remaining}`;
-                if (remaining === "İndirim bitti") {
-                    clearInterval(countdownIntervals[productId]);
-                    location.reload();
+                if (remaining) {
+                    timerElement.innerHTML = `⏰ Kalan süre: ${remaining}`;
+                    if (remaining === "İndirim bitti") {
+                        clearInterval(countdownIntervals[productId]);
+                        loadProducts();
+                    }
                 }
             }
         };
@@ -487,132 +568,148 @@
         }
     }
 
-    // Resmi ImgBB'ye yükle (tamamen arka planda)
-    async function uploadToImgBB(imageData) {
-        const formData = new FormData();
-        formData.append('image', imageData.split(',')[1]);
-        formData.append('key', IMGBB_API_KEY);
+    function filterProducts() {
+        let filtered = [...products];
         
-        try {
-            const response = await fetch('https://api.imgbb.com/1/upload', {
-                method: 'POST',
-                body: formData
-            });
-            const result = await response.json();
-            if (result.success) {
-                return result.data.url;
-            } else {
-                throw new Error('Yükleme başarısız');
-            }
-        } catch(e) {
-            console.error('ImgBB hatası:', e);
-            return null;
+        // Filtre uygula
+        if (currentFilter === "discount") {
+            filtered = filtered.filter(p => p.discountPercent > 0);
         }
+        
+        // Arama uygula
+        if (currentSearch.trim() !== "") {
+            const searchLower = currentSearch.toLowerCase();
+            filtered = filtered.filter(p => p.name.toLowerCase().includes(searchLower));
+        }
+        
+        renderFilteredProducts(filtered);
     }
 
-    // Siparişi resim olarak oluştur (tamamen gizli)
-    async function sendOrderWithImage() {
-        if (cart.length === 0) {
-            showToast("⚠️ Sepetiniz boş!", true);
+    function renderFilteredProducts(filteredProducts) {
+        const container = document.getElementById("productsContainer");
+        if (filteredProducts.length === 0) {
+            container.innerHTML = '<div class="empty-products">🔍 Ürün bulunamadı.</div>';
             return;
         }
         
-        showToast("📸 Sipariş özeti hazırlanıyor...");
-        
-        // Gizli alanı doldur
-        const hiddenDiv = document.getElementById("orderInvoiceHidden");
-        
-        let itemsHtml = "";
-        let total = 0;
-        
-        for (const item of cart) {
-            const itemTotal = item.price * item.quantity;
-            total += itemTotal;
+        container.innerHTML = "";
+        filteredProducts.forEach((p, idx) => {
+            // Orijinal index'i bul
+            const originalIdx = products.findIndex(prod => prod.id === p.id);
+            const hasDiscount = p.discountPercent > 0;
+            const timerId = `timer-${p.id}`;
+            const productPrice = parseFloat(p.finalPrice);
             
-            const product = products.find(p => p.id === item.id);
-            const productImage = product?.image || "https://via.placeholder.com/60?text=Resim+Yok";
-            
-            itemsHtml += `
-                <div class="invoice-item">
-                    <img class="invoice-item-img" src="${productImage}" crossorigin="anonymous" onerror="this.src='https://via.placeholder.com/60?text=Resim+Yok'">
-                    <div class="invoice-item-info">
-                        <div class="invoice-item-name">${escapeHtml(item.name)}</div>
-                        <div class="invoice-item-detail">${item.quantity} adet x $${item.price}</div>
+            const card = document.createElement("div");
+            card.className = "product-card";
+            card.setAttribute("data-product-id", p.id);
+            card.innerHTML = `
+                <img class="product-img" src="${p.image || 'https://via.placeholder.com/200?text=Resim+Yok'}" 
+                     onerror="this.src='https://via.placeholder.com/200?text=Resim+Yok'">
+                <div class="product-info">
+                    <div class="product-name">${escapeHtml(p.name)}</div>
+                    <div class="price-container">
+                        <span class="current-price">$${p.finalPrice}</span>
+                        ${hasDiscount ? `<span class="old-price">$${p.price}</span>` : ''}
+                        ${hasDiscount ? `<span class="discount-badge">-%${p.discountPercent}</span>` : ''}
                     </div>
-                    <div class="invoice-item-price">$${itemTotal.toFixed(2)}</div>
+                    ${hasDiscount && p.discountEnd ? `<div class="countdown-timer" id="${timerId}">⏰ Kalan süre: hesaplanıyor...</div>` : ''}
+                    <div class="quantity-control">
+                        <button class="qty-btn qty-minus" data-idx="${originalIdx}">−</button>
+                        <span class="qty-value" id="qty-${originalIdx}">0</span>
+                        <button class="qty-btn qty-plus" data-idx="${originalIdx}">+</button>
+                    </div>
+                    <button class="add-to-cart" data-idx="${originalIdx}">🛒 Sepete Ekle ($${productPrice})</button>
                 </div>
             `;
-        }
-        
-        hiddenDiv.innerHTML = `
-            <h2>💎 DIAMOND PLUS</h2>
-            <div class="invoice-subtitle">SİPARİŞ ÖZETİ</div>
-            ${itemsHtml}
-            <div class="invoice-total">📦 TOPLAM: $${total.toFixed(2)}</div>
-            <div class="invoice-date">${new Date().toLocaleString('tr-TR')}</div>
-        `;
-        
-        // Render için bekle
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
-        try {
-            const canvas = await html2canvas(hiddenDiv, {
-                scale: 2,
-                backgroundColor: null,
-                logging: false,
-                useCORS: true,
-                allowTaint: false
-            });
+            container.appendChild(card);
             
-            const imageData = canvas.toDataURL("image/png");
-            
-            showToast("📤 Resim yükleniyor...");
-            
-            // ImgBB'ye yükle
-            const imageUrl = await uploadToImgBB(imageData);
-            
-            // Gizli alanı temizle
-            hiddenDiv.innerHTML = "";
-            
-            if (imageUrl) {
-                // WhatsApp mesajını hazırla (yazılı özet + resim linki)
-                let msg = "💎 YENİ SİPARİŞ (Diamond Plus)%0A%0A";
-                let totalMsg = 0;
-                
-                cart.forEach(item => {
-                    const itemTotal = item.price * item.quantity;
-                    totalMsg += itemTotal;
-                    msg += `🛍️ ${item.name}%0A`;
-                    msg += `   📦 Miktar: ${item.quantity} adet%0A`;
-                    msg += `   💲 Birim Fiyat: $${item.price}%0A`;
-                    msg += `   💰 Toplam: $${itemTotal.toFixed(2)}%0A%0A`;
-                });
-                
-                msg += `📦 GENEL TOPLAM: $${totalMsg.toFixed(2)}%0A%0A`;
-                msg += `📅 Tarih: ${new Date().toLocaleString('tr-TR')}%0A%0A`;
-                msg += `🖼️ Sipariş Özeti Resmi:%0A${imageUrl}`;
-                
-                window.open(`https://wa.me/${PHONE_NUMBER}?text=${encodeURIComponent(msg)}`);
-                showToast("✅ Sipariş WhatsApp'a gönderildi!");
-            } else {
-                // Yedek: Resimsiz gönder
-                let msg = "💎 YENİ SİPARİŞ (Diamond Plus)%0A%0A";
-                let totalMsg = 0;
-                cart.forEach(item => {
-                    const itemTotal = item.price * item.quantity;
-                    totalMsg += itemTotal;
-                    msg += `🛍️ ${item.name} x ${item.quantity} = $${itemTotal.toFixed(2)}%0A`;
-                });
-                msg += `%0A📦 TOPLAM: $${totalMsg.toFixed(2)}`;
-                window.open(`https://wa.me/${PHONE_NUMBER}?text=${encodeURIComponent(msg)}`);
-                showToast("⚠️ Resim yüklenemedi, yazılı sipariş gönderildi", true);
+            if (hasDiscount && p.discountEnd) {
+                startCountdown(p.id, p.discountEnd, timerId);
             }
-            
-        } catch(e) {
-            console.error("Hata:", e);
-            hiddenDiv.innerHTML = "";
-            showToast("❌ Bir hata oluştu, lütfen tekrar deneyin", true);
+        });
+        
+        attachProductEvents();
+    }
+
+    function attachProductEvents() {
+        document.querySelectorAll('.qty-plus').forEach(btn => {
+            btn.removeEventListener('click', handlePlusClick);
+            btn.addEventListener('click', handlePlusClick);
+        });
+        
+        document.querySelectorAll('.qty-minus').forEach(btn => {
+            btn.removeEventListener('click', handleMinusClick);
+            btn.addEventListener('click', handleMinusClick);
+        });
+        
+        document.querySelectorAll('.add-to-cart').forEach(btn => {
+            btn.removeEventListener('click', handleAddToCart);
+            btn.addEventListener('click', handleAddToCart);
+        });
+        
+        document.querySelectorAll('.product-card').forEach(card => {
+            card.removeEventListener('click', handleQuickView);
+            card.addEventListener('click', (e) => {
+                // Butonlara tıklandıysa açılmasın
+                if (e.target.classList.contains('qty-btn') || 
+                    e.target.classList.contains('add-to-cart') ||
+                    e.target.classList.contains('qty-value')) {
+                    return;
+                }
+                const productId = card.getAttribute('data-product-id');
+                const product = products.find(p => p.id === productId);
+                if (product) {
+                    showQuickView(product);
+                }
+            });
+        });
+    }
+
+    function handlePlusClick(e) {
+        e.stopPropagation();
+        const idx = parseInt(e.target.dataset.idx);
+        const qtySpan = document.getElementById(`qty-${idx}`);
+        let currentQty = parseInt(qtySpan.innerText);
+        currentQty++;
+        qtySpan.innerText = currentQty;
+        const productPrice = parseFloat(products[idx].finalPrice);
+        updateAddButtonText(idx, currentQty, productPrice);
+    }
+
+    function handleMinusClick(e) {
+        e.stopPropagation();
+        const idx = parseInt(e.target.dataset.idx);
+        const qtySpan = document.getElementById(`qty-${idx}`);
+        let currentQty = parseInt(qtySpan.innerText);
+        if (currentQty > 0) {
+            currentQty--;
+            qtySpan.innerText = currentQty;
+            const productPrice = parseFloat(products[idx].finalPrice);
+            updateAddButtonText(idx, currentQty, productPrice);
         }
+    }
+
+    function handleAddToCart(e) {
+        const idx = parseInt(e.target.dataset.idx);
+        const qtySpan = document.getElementById(`qty-${idx}`);
+        let quantity = parseInt(qtySpan.innerText);
+        if (quantity > 0) {
+            addToCart(products[idx], quantity);
+            showToast(`✅ ${quantity} adet ${products[idx].name} sepete eklendi`);
+            qtySpan.innerText = 0;
+            const productPrice = parseFloat(products[idx].finalPrice);
+            updateAddButtonText(idx, 0, productPrice);
+        } else {
+            showToast("⚠️ Lütfen önce miktar seçin", true);
+        }
+    }
+
+    function showQuickView(product) {
+        document.getElementById("quickviewImg").src = product.image || 'https://via.placeholder.com/400?text=Resim+Yok';
+        document.getElementById("quickviewName").innerText = product.name;
+        document.getElementById("quickviewPrice").innerHTML = `$${product.finalPrice} ${product.discountPercent > 0 ? `<span style="font-size:14px;text-decoration:line-through;opacity:0.6;">$${product.price}</span>` : ''}`;
+        document.getElementById("quickviewModal").classList.add("active");
     }
 
     async function loadProducts() {
@@ -688,94 +785,12 @@
             if (products.length === 0) {
                 container.innerHTML = '<div class="empty-products">⚠️ Ürün bulunamadı.<br>Google Sheets kontrol edin.</div>';
             } else {
-                renderProducts();
+                filterProducts();
             }
         } catch(e) {
             console.error("Hata:", e);
             container.innerHTML = '<div class="empty-products">❌ Ürünler yüklenemedi.<br>Sayfayı yenileyin.<br>Hata: ' + e.message + '</div>';
         }
-    }
-
-    function renderProducts() {
-        const container = document.getElementById("productsContainer");
-        container.innerHTML = "";
-        products.forEach((p, idx) => {
-            const hasDiscount = p.discountPercent > 0;
-            const timerId = `timer-${p.id}`;
-            const productPrice = parseFloat(p.finalPrice);
-            
-            const card = document.createElement("div");
-            card.className = "product-card";
-            card.innerHTML = `
-                <img class="product-img" src="${p.image || 'https://via.placeholder.com/200?text=Resim+Yok'}" 
-                     onerror="this.src='https://via.placeholder.com/200?text=Resim+Yok'">
-                <div class="product-info">
-                    <div class="product-name">${escapeHtml(p.name)}</div>
-                    <div class="price-container">
-                        <span class="current-price">$${p.finalPrice}</span>
-                        ${hasDiscount ? `<span class="old-price">$${p.price}</span>` : ''}
-                        ${hasDiscount ? `<span class="discount-badge">-%${p.discountPercent}</span>` : ''}
-                    </div>
-                    ${hasDiscount && p.discountEnd ? `<div class="countdown-timer" id="${timerId}">⏰ Kalan süre: hesaplanıyor...</div>` : ''}
-                    <div class="quantity-control">
-                        <button class="qty-btn qty-minus" data-idx="${idx}">−</button>
-                        <span class="qty-value" id="qty-${idx}">0</span>
-                        <button class="qty-btn qty-plus" data-idx="${idx}">+</button>
-                    </div>
-                    <button class="add-to-cart" data-idx="${idx}">🛒 Sepete Ekle ($${productPrice})</button>
-                </div>
-            `;
-            container.appendChild(card);
-            
-            if (hasDiscount && p.discountEnd) {
-                startCountdown(p.id, p.discountEnd, timerId);
-            }
-        });
-        
-        document.querySelectorAll('.qty-plus').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const idx = parseInt(btn.dataset.idx);
-                const qtySpan = document.getElementById(`qty-${idx}`);
-                let currentQty = parseInt(qtySpan.innerText);
-                currentQty++;
-                qtySpan.innerText = currentQty;
-                const productPrice = parseFloat(products[idx].finalPrice);
-                updateAddButtonText(idx, currentQty, productPrice);
-            });
-        });
-        
-        document.querySelectorAll('.qty-minus').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const idx = parseInt(btn.dataset.idx);
-                const qtySpan = document.getElementById(`qty-${idx}`);
-                let currentQty = parseInt(qtySpan.innerText);
-                if (currentQty > 0) {
-                    currentQty--;
-                    qtySpan.innerText = currentQty;
-                    const productPrice = parseFloat(products[idx].finalPrice);
-                    updateAddButtonText(idx, currentQty, productPrice);
-                }
-            });
-        });
-        
-        document.querySelectorAll('.add-to-cart').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const idx = parseInt(btn.dataset.idx);
-                const qtySpan = document.getElementById(`qty-${idx}`);
-                let quantity = parseInt(qtySpan.innerText);
-                if (quantity > 0) {
-                    addToCart(products[idx], quantity);
-                    showToast(`✅ ${quantity} adet ${products[idx].name} sepete eklendi`);
-                    qtySpan.innerText = 0;
-                    const productPrice = parseFloat(products[idx].finalPrice);
-                    updateAddButtonText(idx, 0, productPrice);
-                } else {
-                    showToast("⚠️ Lütfen önce miktar seçin", true);
-                }
-            });
-        });
     }
 
     function addToCart(product, quantity) {
@@ -837,6 +852,19 @@
         });
     }
 
+    function sendOrder() {
+        if (cart.length === 0) return alert("Sepetiniz boş!");
+        let msg = "💎 YENİ SİPARİŞ (Diamond Plus)%0A%0A";
+        let total = 0;
+        cart.forEach(item => {
+            const itemTotal = item.price * item.quantity;
+            total += itemTotal;
+            msg += `🛍️ ${item.name} x ${item.quantity} = $${itemTotal.toFixed(2)}%0A`;
+        });
+        msg += `%0A📦 TOPLAM: $${total.toFixed(2)}%0A%0A👤 Müşteri Bilgileri:%0AAd Soyad: %0ATelefon: %0AAdres:`;
+        window.open(`https://wa.me/${PHONE_NUMBER}?text=${encodeURIComponent(msg)}`);
+    }
+
     function escapeHtml(str) {
         if (!str) return "";
         return str.replace(/[&<>]/g, function(m) {
@@ -847,11 +875,45 @@
         });
     }
 
+    // Event Listeners
+    document.getElementById("searchInput").addEventListener("input", (e) => {
+        currentSearch = e.target.value;
+        filterProducts();
+    });
+    
+    document.querySelectorAll(".filter-btn").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+            document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            currentFilter = btn.dataset.filter;
+            filterProducts();
+        });
+    });
+    
+    document.getElementById("discountBanner").addEventListener("click", () => {
+        document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+        const discountBtn = document.querySelector('.filter-btn[data-filter="discount"]');
+        discountBtn.classList.add("active");
+        currentFilter = "discount";
+        filterProducts();
+        showToast("🏷️ İndirimli ürünler listeleniyor!");
+    });
+    
+    document.getElementById("quickviewClose").addEventListener("click", () => {
+        document.getElementById("quickviewModal").classList.remove("active");
+    });
+    
+    document.getElementById("quickviewModal").addEventListener("click", (e) => {
+        if (e.target === document.getElementById("quickviewModal")) {
+            document.getElementById("quickviewModal").classList.remove("active");
+        }
+    });
+
     const modal = document.getElementById("cartModal");
     document.getElementById("cartFloat").onclick = () => { updateCartUI(); modal.classList.add("active"); };
     document.getElementById("closeModalBtn").onclick = () => modal.classList.remove("active");
     modal.onclick = (e) => { if (e.target === modal) modal.classList.remove("active"); };
-    document.getElementById("whatsappOrderBtn").onclick = sendOrderWithImage;
+    document.getElementById("whatsappOrderBtn").onclick = sendOrder;
     
     loadProducts();
 </script>
