@@ -3,11 +3,13 @@ let cart = [];
 let countdownIntervals = [];
 let currentFilter = "all";
 let currentSearch = "";
-let giftUsed1 = false;
-let giftUsed2 = false;
+let activeGiftBox = null; // Aktif hediye kutusunu tutar
 
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS7N92CcB-MFe9UlE7YHTSJCVpaBkeRYawz5TbCGpFsZBjy4DHu_LNitJyULHyz9Ml68A6ZcP93cM2H/pub?gid=0&single=true&output=csv";
 const PHONE_NUMBER = "9647507165134";
+
+// Hediye eşikleri
+const GIFT_THRESHOLDS = [75, 150, 225, 300, 375];
 
 function saveToRecent(product) {
     let recent = JSON.parse(localStorage.getItem('recentProducts') || '[]');
@@ -128,52 +130,123 @@ function updateAddButtonText(idx, quantity, price) {
     }
 }
 
+// Rastgele hediye seç (sepette olmayan)
 function getRandomGiftProduct(minPrice, maxPrice, excludeIds) {
     const eligible = products.filter(p => p.price >= minPrice && p.price <= maxPrice && !excludeIds.includes(p.id));
     if (eligible.length === 0) return null;
     return eligible[Math.floor(Math.random() * eligible.length)];
 }
 
-function showGiftPopup(gift) {
+// Kaç hediye hakkı olduğunu hesapla
+function getGiftCount(total) {
+    let count = 0;
+    for (let threshold of GIFT_THRESHOLDS) {
+        if (total >= threshold) count++;
+    }
+    return count;
+}
+
+// Hediyeleri sepete ekle
+function addGiftsToCart(giftCount, excludeIds) {
+    const gifts = [];
+    const usedIds = [...excludeIds];
+    
+    for (let i = 0; i < giftCount; i++) {
+        let minPrice = 1;
+        let maxPrice = 5;
+        const gift = getRandomGiftProduct(minPrice, maxPrice, usedIds);
+        if (gift) {
+            gifts.push(gift);
+            usedIds.push(gift.id);
+        }
+    }
+    
+    // Hediyeleri sepete ekle (daha önce eklenmiş mi kontrol et)
+    for (let gift of gifts) {
+        const existing = cart.find(item => item.id === gift.id && item.isGift === true);
+        if (!existing) {
+            cart.push({
+                id: gift.id,
+                name: gift.name,
+                price: 0,
+                quantity: 1,
+                isGift: true
+            });
+        }
+    }
+    
+    return gifts;
+}
+
+// Eski hediyeleri temizle (eşik altına düşünce)
+function removeOldGifts() {
+    cart = cart.filter(item => !item.isGift);
+}
+
+// Hediye pop-up'ını göster (tek kutuda tüm hediyeler)
+function showGiftPopup(gifts) {
     const modal = document.getElementById('giftModal');
     const body = document.getElementById('giftModalBody');
     
+    let giftsHtml = '';
+    gifts.forEach(gift => {
+        giftsHtml += `
+            <div style="display:inline-block; margin:10px; text-align:center; width:120px;">
+                <img src="${gift.image || 'https://via.placeholder.com/100'}" style="width:100px; height:100px; object-fit:cover; border-radius:15px;" onerror="this.src='https://via.placeholder.com/100'">
+                <p style="margin-top:5px; font-size:12px;">${escapeHtml(gift.name)}</p>
+                <p style="font-size:11px; color:#ffd700;">🎁 0$</p>
+            </div>
+        `;
+    });
+    
     body.innerHTML = `
         <h2>🎉 TEBRİKLER! 🎉</h2>
-        <img src="${gift.image || 'https://via.placeholder.com/150'}" onerror="this.src='https://via.placeholder.com/150'">
-        <p><strong>${escapeHtml(gift.name)}</strong> hediyesini kazandın!</p>
-        <div class="gift-price">🎁 0$ (ÜCRETSİZ)</div>
-        <p style="margin-top:15px; font-size:14px;">Hediye sepete eklendi! 🛒</p>
+        <p>Kazandığın hediyeler:</p>
+        <div style="display:flex; flex-wrap:wrap; justify-content:center; margin:15px 0;">
+            ${giftsHtml}
+        </div>
+        <div class="gift-price">🎁 TÜMÜ ÜCRETSİZ</div>
+        <p style="margin-top:15px; font-size:14px;">Hediyeler sepete eklendi! 🛒</p>
     `;
     
     modal.classList.add('active');
     
-    setTimeout(() => {
-        modal.classList.remove('active');
-    }, 3000);
+    // Kapat butonuna basana kadar kalır (otomatik kapanmaz)
 }
 
+// Hediye sistemini kontrol et
 function checkGiftEligibility() {
     const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const excludeIds = cart.map(item => item.id);
+    const giftCount = getGiftCount(total);
+    const currentGiftCount = cart.filter(item => item.isGift).length;
     
-    if (total >= 100 && !giftUsed2) {
-        const gift = getRandomGiftProduct(1, 3.5, excludeIds);
-        if (gift) {
-            giftUsed2 = true;
-            addToCart(gift, 1, true);
-            showGiftPopup(gift);
-            return;
+    // Eğer hediye hakkı yoksa veya azaldıysa hediyeleri temizle
+    if (giftCount === 0) {
+        if (currentGiftCount > 0) {
+            removeOldGifts();
+            updateCartUI();
+            if (activeGiftBox) {
+                activeGiftBox.remove();
+                activeGiftBox = null;
+            }
         }
+        return;
     }
-    if (total >= 50 && !giftUsed1) {
-        const gift = getRandomGiftProduct(2, 4, excludeIds);
-        if (gift) {
-            giftUsed1 = true;
-            addToCart(gift, 1, true);
-            showGiftPopup(gift);
-            return;
+    
+    // Hediye hakkı varsa ve hediyeler eksikse veya değiştiyse
+    if (giftCount !== currentGiftCount) {
+        // Eski hediyeleri temizle
+        removeOldGifts();
+        
+        // Yeni hediyeleri ekle
+        const excludeIds = cart.map(item => item.id);
+        const gifts = addGiftsToCart(giftCount, excludeIds);
+        
+        if (gifts.length > 0) {
+            showGiftPopup(gifts);
         }
+        
+        updateCartUI();
     }
 }
 
@@ -190,6 +263,7 @@ function showQuickView(product) {
         similar.forEach(sim => {
             const div = document.createElement('div');
             div.className = 'similar-item';
+            // Benzer ürüne tıklayınca direkt o ürüne yönlendir
             div.onclick = () => showQuickView(sim);
             div.innerHTML = `
                 <img src="${sim.image || 'https://via.placeholder.com/70'}" onerror="this.src='https://via.placeholder.com/70'">
@@ -234,8 +308,10 @@ function renderFilteredProducts(filteredProducts) {
         card.className = "product-card";
         card.setAttribute("data-product-id", p.id);
         card.innerHTML = `
-            <img class="product-img" src="${p.image || 'https://via.placeholder.com/200?text=Resim+Yok'}" 
-                 onerror="this.src='https://via.placeholder.com/200?text=Resim+Yok'">
+            <div class="product-img-container">
+                <img class="product-img" src="${p.image || 'https://via.placeholder.com/200?text=Resim+Yok'}" 
+                     onerror="this.src='https://via.placeholder.com/200?text=Resim+Yok'">
+            </div>
             <div class="product-info">
                 <div class="product-name">${escapeHtml(p.name)}</div>
                 ${p.description ? `<div class="product-description">📝 ${escapeHtml(p.description)}</div>` : ''}
@@ -279,10 +355,33 @@ function attachProductEvents() {
         btn.addEventListener('click', handleAddToCart);
     });
     
-    document.querySelectorAll('.product-card').forEach(card => {
-        card.removeEventListener('click', handleCardClick);
-        card.addEventListener('click', handleCardClick);
+    // Sadece resme tıklayınca büyüsün
+    document.querySelectorAll('.product-img-container').forEach(container => {
+        container.removeEventListener('click', handleImageClick);
+        container.addEventListener('click', handleImageClick);
     });
+    
+    // Ürün ismine veya altına tıklayınca büyümesin (hiçbir şey yapmasın)
+    document.querySelectorAll('.product-name, .product-description, .price-container, .countdown-timer, .quantity-control, .add-to-cart').forEach(el => {
+        el.removeEventListener('click', handlePreventClick);
+        el.addEventListener('click', handlePreventClick);
+    });
+}
+
+function handleImageClick(e) {
+    e.stopPropagation();
+    const card = this.closest('.product-card');
+    const productId = card.getAttribute('data-product-id');
+    const product = products.find(p => p.id === productId);
+    if (product) {
+        saveToRecent(product);
+        showQuickView(product);
+    }
+}
+
+function handlePreventClick(e) {
+    e.stopPropagation();
+    // Hiçbir şey yapma, sadece tıklamanın yayılmasını engelle
 }
 
 function handlePlusClick(e) {
@@ -322,20 +421,6 @@ function handleAddToCart(e) {
         updateAddButtonText(idx, 0, productPrice);
     } else {
         showToast("⚠️ Lütfen önce miktar seçin", true);
-    }
-}
-
-function handleCardClick(e) {
-    if (e.target.classList.contains('qty-btn') || 
-        e.target.classList.contains('add-to-cart') ||
-        e.target.classList.contains('qty-value')) {
-        return;
-    }
-    const productId = this.getAttribute('data-product-id');
-    const product = products.find(p => p.id === productId);
-    if (product) {
-        saveToRecent(product);
-        showQuickView(product);
     }
 }
 
@@ -428,7 +513,7 @@ async function loadProducts() {
 
 function addToCart(product, quantity, isGift = false) {
     const priceToUse = isGift ? 0 : parseFloat(product.finalPrice);
-    const existing = cart.find(item => item.id === product.id);
+    const existing = cart.find(item => item.id === product.id && item.isGift === isGift);
     if (existing) {
         existing.quantity += quantity;
     } else {
@@ -451,8 +536,6 @@ function updateCartUI() {
     if (cart.length === 0) {
         modalList.innerHTML = '<li style="text-align:center; color:#aaa;">Sepetiniz boş</li>';
         document.getElementById("cartModalTotal").innerText = "Toplam: $0";
-        giftUsed1 = false;
-        giftUsed2 = false;
         return;
     }
     modalList.innerHTML = "";
@@ -463,15 +546,14 @@ function updateCartUI() {
         const li = document.createElement("li");
         li.className = "cart-item";
         
-        // Hediye ürünlerde miktar butonlarını gösterme
         if (item.isGift) {
             li.innerHTML = `
                 <div class="cart-item-info">
-                    <div class="cart-item-name">${escapeHtml(item.name)} <span style="color:#e67e22;">🎁 HEDİYE (ÜCRETSİZ)</span></div>
-                    <div class="cart-item-price">$${item.price} x ${item.quantity}</div>
+                    <div class="cart-item-name">${escapeHtml(item.name)} <span style="color:#e67e22;">🎁 HEDİYE</span></div>
+                    <div class="cart-item-price">0$ x ${item.quantity}</div>
                 </div>
                 <div class="cart-item-actions">
-                    <span style="font-size:12px; color:#999;">Miktar değiştirilemez</span>
+                    <span style="font-size:12px; color:#999;"></span>
                 </div>
             `;
         } else {
@@ -491,7 +573,6 @@ function updateCartUI() {
     });
     document.getElementById("cartModalTotal").innerText = `Toplam: $${total.toFixed(2)}`;
     
-    // Sadece normal ürünler için buton olaylarını ekle
     document.querySelectorAll('.modal-qty-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const idx = parseInt(btn.dataset.idx);
@@ -519,8 +600,7 @@ function sendOrder() {
         message += `${item.name} x ${item.quantity} = ${itemTotal.toFixed(2)}$ 🛍️\n`;
     });
     
-    message += `\n📦 Toplam fiyat = ${total.toFixed(2)}$\n\n`;
-    message += `👤 Müşteri Bilgileri:\nAd Soyad: \nTelefon: \nAdres:`;
+    message += `\n📦 Toplam fiyat = ${total.toFixed(2)}$`;
     
     window.open(`https://wa.me/${PHONE_NUMBER}?text=${encodeURIComponent(message)}`);
 }
@@ -535,6 +615,7 @@ function escapeHtml(str) {
     });
 }
 
+// Event Listeners
 document.getElementById("searchInput").addEventListener("input", (e) => {
     currentSearch = e.target.value;
     filterProducts();
