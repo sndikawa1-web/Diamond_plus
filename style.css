@@ -502,26 +502,77 @@ body {
     box-shadow: 0 2px 10px rgba(0,0,0,0.2);
 }
 
-.gift-box {
+/* Hediye Pop-up Modal - Ekranın tam ortasında */
+.gift-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.8);
+    z-index: 20000;
+    justify-content: center;
+    align-items: center;
+}
+.gift-modal.active {
+    display: flex;
+}
+.gift-modal-content {
     background: linear-gradient(135deg, #f39c12, #e67e22);
+    width: 85%;
+    max-width: 350px;
+    border-radius: 40px;
+    text-align: center;
+    animation: bounceIn 0.5s ease;
+    position: relative;
+    padding: 30px 20px;
+}
+@keyframes bounceIn {
+    0% { transform: scale(0.3); opacity: 0; }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); opacity: 1; }
+}
+.gift-modal-close {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 28px;
     color: white;
-    padding: 15px;
-    margin: 10px 15px;
-    border-radius: 20px;
+    cursor: pointer;
+    background: rgba(0,0,0,0.2);
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    cursor: pointer;
-    animation: pulse 1s infinite;
+    justify-content: center;
 }
-@keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.02); }
-    100% { transform: scale(1); }
+.gift-modal-body {
+    color: white;
 }
-.gift-box:active {
-    transform: scale(0.98);
+.gift-modal-body img {
+    width: 150px;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 20px;
+    margin: 15px auto;
+    border: 3px solid white;
 }
-.gift-box span {
+.gift-modal-body h2 {
+    font-size: 28px;
+    margin-bottom: 10px;
+}
+.gift-modal-body p {
+    font-size: 18px;
+    margin: 10px 0;
+}
+.gift-modal-body .gift-price {
     font-size: 24px;
+    font-weight: bold;
+    background: rgba(255,255,255,0.2);
+    display: inline-block;
+    padding: 5px 20px;
+    border-radius: 30px;
+    margin-top: 10px;
 }
