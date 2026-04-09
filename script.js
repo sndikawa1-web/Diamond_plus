@@ -134,53 +134,49 @@ function getRandomGiftProduct(minPrice, maxPrice, excludeIds) {
     return eligible[Math.floor(Math.random() * eligible.length)];
 }
 
+// Hediye pop-up'ını göster
+function showGiftPopup(gift) {
+    const modal = document.getElementById('giftModal');
+    const body = document.getElementById('giftModalBody');
+    
+    body.innerHTML = `
+        <h2>🎉 TEBRİKLER! 🎉</h2>
+        <img src="${gift.image || 'https://via.placeholder.com/150'}" onerror="this.src='https://via.placeholder.com/150'">
+        <p><strong>${escapeHtml(gift.name)}</strong> hediyesini kazandın!</p>
+        <div class="gift-price">🎁 0$ (ÜCRETSİZ)</div>
+        <p style="margin-top:15px; font-size:14px;">Hediye sepete eklendi! 🛒</p>
+    `;
+    
+    modal.classList.add('active');
+    
+    // 3 saniye sonra otomatik kapat
+    setTimeout(() => {
+        modal.classList.remove('active');
+    }, 3000);
+}
+
 function checkGiftEligibility() {
     const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const container = document.getElementById('giftBoxContainer');
     const excludeIds = cart.map(item => item.id);
     
     if (total >= 100 && !giftUsed2) {
         const gift = getRandomGiftProduct(1, 3.5, excludeIds);
         if (gift) {
-            container.innerHTML = `
-                <div class="gift-box" id="giftBox2">
-                    <span>🎁🎁</span>
-                    <div><strong>2. HEDİYE KUTUSU!</strong><br>100$'ı geçtin! Tıkla, sürpriz hediyeni al!</div>
-                    <span>🎁🎁</span>
-                </div>
-            `;
-            document.getElementById('giftBox2').onclick = () => {
-                addToCart(gift, 1);
-                showToast(`🎉 Tebrikler! ${gift.name} hediyeni kazandın! (0$)`);
-                giftUsed2 = true;
-                container.innerHTML = '';
-                updateCartUI();
-            };
+            giftUsed2 = true;
+            addToCart(gift, 1, true); // true = hediye olduğunu belirt
+            showGiftPopup(gift);
             return;
         }
     }
     if (total >= 50 && !giftUsed1) {
         const gift = getRandomGiftProduct(2, 4, excludeIds);
         if (gift) {
-            container.innerHTML = `
-                <div class="gift-box" id="giftBox1">
-                    <span>🎁</span>
-                    <div><strong>HEDİYE KAZANDIN!</strong><br>50$'ı geçtin! Kutunu aç, sürpriz hediyeni al!</div>
-                    <span>🎁</span>
-                </div>
-            `;
-            document.getElementById('giftBox1').onclick = () => {
-                addToCart(gift, 1);
-                showToast(`🎉 Tebrikler! ${gift.name} hediyeni kazandın! (0$)`);
-                giftUsed1 = true;
-                container.innerHTML = '';
-                if (total >= 100) checkGiftEligibility();
-                updateCartUI();
-            };
+            giftUsed1 = true;
+            addToCart(gift, 1, true);
+            showGiftPopup(gift);
             return;
         }
     }
-    container.innerHTML = '';
 }
 
 function showQuickView(product) {
@@ -321,7 +317,7 @@ function handleAddToCart(e) {
     const qtySpan = document.getElementById(`qty-${idx}`);
     let quantity = parseInt(qtySpan.innerText);
     if (quantity > 0) {
-        addToCart(products[idx], quantity);
+        addToCart(products[idx], quantity, false);
         showToast(`✅ ${quantity} adet ${products[idx].name} sepete eklendi`);
         qtySpan.innerText = 0;
         const productPrice = parseFloat(products[idx].finalPrice);
@@ -420,9 +416,6 @@ async function loadProducts() {
             }
         }
         
-        console.log("Ürünler yüklendi:", products.length);
-        console.log("İndirimli ürünler:", products.filter(p => p.discountPercent > 0).length);
-        
         if (products.length === 0) {
             container.innerHTML = '<div class="empty-products">⚠️ Ürün bulunamadı.<br>Google Sheets kontrol edin.</div>';
         } else {
@@ -435,7 +428,8 @@ async function loadProducts() {
     }
 }
 
-function addToCart(product, quantity) {
+function addToCart(product, quantity, isGift = false) {
+    const priceToUse = isGift ? 0 : parseFloat(product.finalPrice);
     const existing = cart.find(item => item.id === product.id);
     if (existing) {
         existing.quantity += quantity;
@@ -443,8 +437,9 @@ function addToCart(product, quantity) {
         cart.push({
             id: product.id,
             name: product.name,
-            price: parseFloat(product.finalPrice),
-            quantity: quantity
+            price: priceToUse,
+            quantity: quantity,
+            isGift: isGift
         });
     }
     updateCartUI();
@@ -458,9 +453,6 @@ function updateCartUI() {
     if (cart.length === 0) {
         modalList.innerHTML = '<li style="text-align:center; color:#aaa;">Sepetiniz boş</li>';
         document.getElementById("cartModalTotal").innerText = "Toplam: $0";
-        giftUsed1 = false;
-        giftUsed2 = false;
-        document.getElementById('giftBoxContainer').innerHTML = '';
         return;
     }
     modalList.innerHTML = "";
@@ -472,7 +464,7 @@ function updateCartUI() {
         li.className = "cart-item";
         li.innerHTML = `
             <div class="cart-item-info">
-                <div class="cart-item-name">${escapeHtml(item.name)} ${item.price === 0 ? '<span style="color:#e67e22;">🎁 HEDİYE</span>' : ''}</div>
+                <div class="cart-item-name">${escapeHtml(item.name)} ${item.isGift ? '<span style="color:#e67e22;">🎁 HEDİYE</span>' : ''}</div>
                 <div class="cart-item-price">$${item.price} x ${item.quantity}</div>
             </div>
             <div class="cart-item-actions">
@@ -553,6 +545,16 @@ document.getElementById("quickviewClose").addEventListener("click", () => {
 document.getElementById("quickviewModal").addEventListener("click", (e) => {
     if (e.target === document.getElementById("quickviewModal")) {
         document.getElementById("quickviewModal").classList.remove("active");
+    }
+});
+
+document.getElementById("giftModalClose").addEventListener("click", () => {
+    document.getElementById("giftModal").classList.remove("active");
+});
+
+document.getElementById("giftModal").addEventListener("click", (e) => {
+    if (e.target === document.getElementById("giftModal")) {
+        document.getElementById("giftModal").classList.remove("active");
     }
 });
 
