@@ -2,77 +2,126 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>Diamond Plus | Alışveriş</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>Diamond Plus | Premium Alışveriş</title>
+    
+    <!-- Font Awesome Icons (Opsiyonel ama güzel durur) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <!-- Ana Stil Dosyası -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+<!-- HEADER -->
 <div class="header">
-    <h1>💎 DIAMOND PLUS</h1>
-    <p>Premium Ürünler | 💲 Dolar Fiyatları</p>
+    <h1><i class="fas fa-gem"></i> DIAMOND PLUS</h1>
+    <p>Premium Ürünler | Güvenli Alışveriş</p>
 </div>
 
+<!-- İNDİRİM BANNER -->
 <div class="discount-banner" id="discountBanner">
-    🏷️ İNDİRİM FIRSATI! Tıkla, kaçırma! 🔥
+    <i class="fas fa-tag"></i> İNDİRİM FIRSATI! Tıkla, Kaçırma! <i class="fas fa-fire"></i>
 </div>
 
+<!-- ARAMA VE FİLTRE -->
 <div class="search-filter">
-    <input type="text" id="searchInput" class="search-box" placeholder="🔍 Ürün ara...">
+    <div class="search-wrapper">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" id="searchInput" class="search-box" placeholder="Ürün, kategori veya marka ara...">
+    </div>
     <div class="filter-buttons">
-        <button class="filter-btn active" data-filter="all">📦 Tüm Ürünler</button>
-        <button class="filter-btn" data-filter="discount">🏷️ İndirimdekiler</button>
+        <button class="filter-btn active" data-filter="all"><i class="fas fa-box"></i> Tümü</button>
+        <button class="filter-btn" data-filter="discount"><i class="fas fa-percent"></i> İndirimdekiler</button>
     </div>
 </div>
 
+<!-- SON BAKILANLAR -->
 <div id="recentSection" style="display:none;">
-    <div class="section-title">👁️ EN SON BAKTIKLARINIZ</div>
+    <div class="section-title"><i class="fas fa-history"></i> SON BAKTIKLARINIZ</div>
     <div id="recentProducts" class="recent-products"></div>
 </div>
 
-<div class="section-title">🔥 POPÜLER ÜRÜNLER</div>
-<div id="productsContainer" class="products-grid">Ürünler yükleniyor...</div>
-
-<div class="cart-float" id="cartFloat">
-    <span class="cart-icon">🛒</span>
-    <span class="cart-count" id="cartCount">0</span>
-</div>
-
-<div id="cartModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>🛍️ Sepetim</h3>
-            <button class="close-modal" id="closeModalBtn">&times;</button>
-        </div>
-        <ul id="cartModalItems" class="cart-items-list"><li>Sepetiniz boş</li></ul>
-        <div id="cartModalTotal" class="cart-total">Toplam: $0</div>
-        <button id="whatsappOrderBtn" class="whatsapp-order">📲 WhatsApp ile Sipariş Gönder</button>
+<!-- ÜRÜN LİSTESİ -->
+<div class="section-title"><i class="fas fa-star"></i> ÖNE ÇIKAN ÜRÜNLER</div>
+<div id="productsContainer" class="products-grid">
+    <div class="loading-spinner">
+        <div class="spinner"></div>
+        <p>Ürünler yükleniyor...</p>
     </div>
 </div>
 
+<!-- SEPET BUTONU -->
+<div class="cart-float" id="cartFloat">
+    <span class="cart-icon"><i class="fas fa-shopping-bag"></i></span>
+    <span class="cart-count" id="cartCount">0</span>
+</div>
+
+<!-- SEPET MODAL -->
+<div id="cartModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="modal-title">
+                <i class="fas fa-shopping-cart"></i>
+                <h3>Sepetim</h3>
+            </div>
+            <div class="modal-header-actions">
+                <!-- Sepeti Boşalt Butonu (Koda eklendi) -->
+                <button id="clearCartBtn" class="clear-cart-btn"><i class="fas fa-trash-alt"></i> Boşalt</button>
+                <button class="close-modal" id="closeModalBtn">&times;</button>
+            </div>
+        </div>
+        <ul id="cartModalItems" class="cart-items-list">
+            <li class="empty-cart-message">Sepetinizde ürün bulunmuyor.</li>
+        </ul>
+        <div id="cartModalTotal" class="cart-total">Toplam: $0.00</div>
+        <button id="whatsappOrderBtn" class="whatsapp-order"><i class="fab fa-whatsapp"></i> WhatsApp ile Siparişi Tamamla</button>
+    </div>
+</div>
+
+<!-- HIZLI BAKIŞ MODAL -->
 <div id="quickviewModal" class="quickview-modal">
     <div class="quickview-close" id="quickviewClose">&times;</div>
     <div class="quickview-content">
-        <img id="quickviewImg" class="quickview-img" src="">
+        <img id="quickviewImg" class="quickview-img" src="https://via.placeholder.com/400" alt="Ürün Resmi">
         <div class="quickview-info">
-            <div class="quickview-name" id="quickviewName"></div>
-            <div class="quickview-price" id="quickviewPrice"></div>
+            <div class="quickview-name" id="quickviewName">Ürün Adı</div>
+            <div class="quickview-price-container">
+                <span class="quickview-current-price" id="quickviewPrice">$0.00</span>
+                <span class="quickview-fake-price" id="quickviewFakePrice"></span>
+                <span class="quickview-discount-badge" id="quickviewDiscount"></span>
+            </div>
+            <div class="quickview-desc" id="quickviewDesc"></div>
+            
+            <!-- Hızlı Sepet Ekleme -->
+            <div class="quickview-actions">
+                <div class="quantity-control" style="flex: 2;">
+                    <button class="qty-btn" id="qvMinus">−</button>
+                    <span class="qty-value" id="qvQty">1</span>
+                    <button class="qty-btn" id="qvPlus">+</button>
+                </div>
+                <button class="add-to-cart-btn" id="qvAddToCart" style="flex: 3;"><i class="fas fa-cart-plus"></i> Sepete Ekle</button>
+            </div>
+            
             <div class="quickview-similar">
-                <div class="quickview-similar-title">🔍 BUNLARA DA BAKTILAR</div>
+                <div class="quickview-similar-title"><i class="fas fa-search"></i> BUNLARA DA BAKTILAR</div>
                 <div id="similarProducts" class="similar-products"></div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Hediye Pop-up Modal -->
+<!-- HEDİYE KAZANMA MODAL -->
 <div id="giftModal" class="gift-modal">
     <div class="gift-modal-content">
         <div class="gift-modal-close" id="giftModalClose">&times;</div>
-        <div id="giftModalBody" class="gift-modal-body"></div>
+        <div id="giftModalBody" class="gift-modal-body">
+            <!-- Dinamik içerik JS ile doldurulacak -->
+        </div>
     </div>
 </div>
 
+<!-- Ana JavaScript Dosyası -->
 <script src="script.js"></script>
 </body>
 </html>
