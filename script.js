@@ -5,11 +5,11 @@ let currentFilter = "all";
 let currentSearch = "";
 let pendingGifts = [];
 let isProcessingGift = false;
+let lastTotal = 0; // Son toplamı takip et
 
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS7N92CcB-MFe9UlE7YHTSJCVpaBkeRYawz5TbCGpFsZBjy4DHu_LNitJyULHyz9Ml68A6ZcP93cM2H/pub?gid=0&single=true&output=csv";
 const PHONE_NUMBER = "9647507165134";
 
-// SADECE bu eşikler için hediye verilecek
 const GIFT_THRESHOLDS = [75, 150, 225, 300, 375];
 
 function saveToRecent(product) {
@@ -131,7 +131,6 @@ function updateAddButtonText(idx, quantity, price) {
     }
 }
 
-// Rastgele hediye seç (2-5$ arası)
 function getRandomGift() {
     const availableProducts = products.filter(p => p.price >= 2 && p.price <= 5);
     if (availableProducts.length === 0) return null;
@@ -139,7 +138,6 @@ function getRandomGift() {
     return availableProducts[randomIndex];
 }
 
-// ★ DÜZELTİLDİ: SADECE eşikleri geçen HER BİR eşik için 1 hediye ★
 function getGiftCount(total) {
     let count = 0;
     for (let threshold of GIFT_THRESHOLDS) {
@@ -147,7 +145,7 @@ function getGiftCount(total) {
             count++;
         }
     }
-    return count; // Maksimum 5 (75,150,225,300,375)
+    return count;
 }
 
 function showSingleGiftPopup(gift, index, total) {
@@ -176,7 +174,6 @@ function processNextGift() {
     isProcessingGift = true;
     const giftData = pendingGifts.shift();
     
-    // Hediyeyi sepete ekle (fiyat 0)
     cart.push({
         id: giftData.gift.id,
         name: giftData.gift.name,
@@ -185,29 +182,31 @@ function processNextGift() {
         isGift: true
     });
     
-    // Pop-up göster
     showSingleGiftPopup(giftData.gift, giftData.index, giftData.total);
     updateCartUI();
 }
 
 function checkAndAddGifts() {
-    // Sadece normal ürünlerin toplamını hesapla (hediyeler hariç)
     const total = cart.reduce((sum, item) => {
         if (item.isGift) return sum;
         return sum + (item.price * item.quantity);
     }, 0);
     
+    // Toplam değişmediyse tekrar kontrol etme
+    if (total === lastTotal) return;
+    lastTotal = total;
+    
     const expectedGiftCount = getGiftCount(total);
     const currentGiftCount = cart.filter(item => item.isGift).length;
     
-    console.log(`Toplam: ${total}$, Beklenen hediye sayısı: ${expectedGiftCount}, Mevcut hediye sayısı: ${currentGiftCount}`);
+    console.log(`Toplam: ${total}$, Beklenen: ${expectedGiftCount}, Mevcut: ${currentGiftCount}`);
     
     // Beklenen hediyeler mevcut değilse
     if (expectedGiftCount > 0 && currentGiftCount !== expectedGiftCount) {
         // Mevcut hediyeleri temizle
         cart = cart.filter(item => !item.isGift);
         
-        // Yeni hediyeleri bul (her eşik için 1 hediye)
+        // Yeni hediyeleri bul
         const newGifts = [];
         for (let i = 0; i < expectedGiftCount; i++) {
             const newGift = getRandomGift();
@@ -217,7 +216,7 @@ function checkAndAddGifts() {
         }
         
         if (newGifts.length > 0) {
-            // Bekleyen hediyelere ekle (sıra ve toplam bilgisiyle)
+            // Bekleyen hediyelere ekle (sadece yeni eklenenler)
             pendingGifts = newGifts.map((gift, idx) => ({
                 gift: gift,
                 index: idx + 1,
@@ -225,7 +224,7 @@ function checkAndAddGifts() {
             }));
             
             // Eğer şu anda bir hediye işlemi yoksa başlat
-            if (!isProcessingGift) {
+            if (!isProcessingGift && pendingGifts.length > 0) {
                 processNextGift();
             }
         }
@@ -598,7 +597,6 @@ function escapeHtml(str) {
     });
 }
 
-// Event Listeners
 document.getElementById("searchInput").addEventListener("input", (e) => {
     currentSearch = e.target.value;
     filterProducts();
@@ -632,27 +630,29 @@ document.getElementById("quickviewModal").addEventListener("click", (e) => {
     }
 });
 
+// ★ DÜZELTİLDİ: Pop-up kapanınca sıradaki hediye gelir, ANCAK sadece kalan varsa
 document.getElementById("giftModalClose").addEventListener("click", () => {
     document.getElementById("giftModal").classList.remove("active");
-    setTimeout(() => {
-        if (pendingGifts.length > 0) {
+    // Kalan hediye varsa ve işlem devam ediyorsa devam et
+    if (pendingGifts.length > 0 && isProcessingGift) {
+        setTimeout(() => {
             processNextGift();
-        } else {
-            isProcessingGift = false;
-        }
-    }, 300);
+        }, 300);
+    } else {
+        isProcessingGift = false;
+    }
 });
 
 document.getElementById("giftModal").addEventListener("click", (e) => {
     if (e.target === document.getElementById("giftModal")) {
         document.getElementById("giftModal").classList.remove("active");
-        setTimeout(() => {
-            if (pendingGifts.length > 0) {
+        if (pendingGifts.length > 0 && isProcessingGift) {
+            setTimeout(() => {
                 processNextGift();
-            } else {
-                isProcessingGift = false;
-            }
-        }, 300);
+            }, 300);
+        } else {
+            isProcessingGift = false;
+        }
     }
 });
 
