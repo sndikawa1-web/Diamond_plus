@@ -134,7 +134,6 @@ function getRandomGiftProduct(minPrice, maxPrice, excludeIds) {
     return eligible[Math.floor(Math.random() * eligible.length)];
 }
 
-// Hediye pop-up'ını göster
 function showGiftPopup(gift) {
     const modal = document.getElementById('giftModal');
     const body = document.getElementById('giftModalBody');
@@ -149,7 +148,6 @@ function showGiftPopup(gift) {
     
     modal.classList.add('active');
     
-    // 3 saniye sonra otomatik kapat
     setTimeout(() => {
         modal.classList.remove('active');
     }, 3000);
@@ -163,7 +161,7 @@ function checkGiftEligibility() {
         const gift = getRandomGiftProduct(1, 3.5, excludeIds);
         if (gift) {
             giftUsed2 = true;
-            addToCart(gift, 1, true); // true = hediye olduğunu belirt
+            addToCart(gift, 1, true);
             showGiftPopup(gift);
             return;
         }
@@ -453,6 +451,8 @@ function updateCartUI() {
     if (cart.length === 0) {
         modalList.innerHTML = '<li style="text-align:center; color:#aaa;">Sepetiniz boş</li>';
         document.getElementById("cartModalTotal").innerText = "Toplam: $0";
+        giftUsed1 = false;
+        giftUsed2 = false;
         return;
     }
     modalList.innerHTML = "";
@@ -462,21 +462,36 @@ function updateCartUI() {
         total += itemTotal;
         const li = document.createElement("li");
         li.className = "cart-item";
-        li.innerHTML = `
-            <div class="cart-item-info">
-                <div class="cart-item-name">${escapeHtml(item.name)} ${item.isGift ? '<span style="color:#e67e22;">🎁 HEDİYE</span>' : ''}</div>
-                <div class="cart-item-price">$${item.price} x ${item.quantity}</div>
-            </div>
-            <div class="cart-item-actions">
-                <button class="modal-qty-btn" data-idx="${idx}" data-dir="minus">−</button>
-                <span>${item.quantity}</span>
-                <button class="modal-qty-btn" data-idx="${idx}" data-dir="plus">+</button>
-            </div>
-        `;
+        
+        // Hediye ürünlerde miktar butonlarını gösterme
+        if (item.isGift) {
+            li.innerHTML = `
+                <div class="cart-item-info">
+                    <div class="cart-item-name">${escapeHtml(item.name)} <span style="color:#e67e22;">🎁 HEDİYE (ÜCRETSİZ)</span></div>
+                    <div class="cart-item-price">$${item.price} x ${item.quantity}</div>
+                </div>
+                <div class="cart-item-actions">
+                    <span style="font-size:12px; color:#999;">Miktar değiştirilemez</span>
+                </div>
+            `;
+        } else {
+            li.innerHTML = `
+                <div class="cart-item-info">
+                    <div class="cart-item-name">${escapeHtml(item.name)}</div>
+                    <div class="cart-item-price">$${item.price} x ${item.quantity}</div>
+                </div>
+                <div class="cart-item-actions">
+                    <button class="modal-qty-btn" data-idx="${idx}" data-dir="minus">−</button>
+                    <span>${item.quantity}</span>
+                    <button class="modal-qty-btn" data-idx="${idx}" data-dir="plus">+</button>
+                </div>
+            `;
+        }
         modalList.appendChild(li);
     });
     document.getElementById("cartModalTotal").innerText = `Toplam: $${total.toFixed(2)}`;
     
+    // Sadece normal ürünler için buton olaylarını ekle
     document.querySelectorAll('.modal-qty-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const idx = parseInt(btn.dataset.idx);
@@ -494,15 +509,20 @@ function updateCartUI() {
 
 function sendOrder() {
     if (cart.length === 0) return alert("Sepetiniz boş!");
-    let msg = "💎 YENİ SİPARİŞ (Diamond Plus)%0A%0A";
+    
+    let message = "💎 YENİ SİPARİŞ (Diamond Plus)\n\n";
     let total = 0;
+    
     cart.forEach(item => {
         const itemTotal = item.price * item.quantity;
         total += itemTotal;
-        msg += `🛍️ ${item.name} x ${item.quantity} = $${itemTotal.toFixed(2)}%0A`;
+        message += `${item.name} x ${item.quantity} = ${itemTotal.toFixed(2)}$ 🛍️\n`;
     });
-    msg += `%0A📦 TOPLAM: $${total.toFixed(2)}%0A%0A👤 Müşteri Bilgileri:%0AAd Soyad: %0ATelefon: %0AAdres:`;
-    window.open(`https://wa.me/${PHONE_NUMBER}?text=${encodeURIComponent(msg)}`);
+    
+    message += `\n📦 Toplam fiyat = ${total.toFixed(2)}$\n\n`;
+    message += `👤 Müşteri Bilgileri:\nAd Soyad: \nTelefon: \nAdres:`;
+    
+    window.open(`https://wa.me/${PHONE_NUMBER}?text=${encodeURIComponent(message)}`);
 }
 
 function escapeHtml(str) {
