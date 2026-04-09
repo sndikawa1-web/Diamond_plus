@@ -310,64 +310,64 @@
             animation: slideUp 0.3s ease;
         }
         
-        /* Sipariş özeti resmi için görünür alan (geçici) */
-        .order-invoice-temp {
-            position: fixed;
-            left: 0;
-            top: 0;
+        /* Sipariş özeti resmi için tamamen gizli alan */
+        .order-invoice-hidden {
+            position: absolute;
+            left: -9999px;
+            top: -9999px;
             width: 450px;
             background: linear-gradient(135deg, #0f0c29, #302b63);
             border-radius: 25px;
             padding: 25px;
             color: white;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            z-index: 9999;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            opacity: 0;
+            pointer-events: none;
         }
-        .order-invoice-temp h2 {
+        .order-invoice-hidden h2 {
             text-align: center;
             margin-bottom: 20px;
             font-size: 26px;
             letter-spacing: 2px;
         }
-        .order-invoice-temp .invoice-subtitle {
+        .order-invoice-hidden .invoice-subtitle {
             text-align: center;
             font-size: 12px;
             opacity: 0.7;
             margin-bottom: 25px;
         }
-        .order-invoice-temp .invoice-item {
+        .order-invoice-hidden .invoice-item {
             display: flex;
             align-items: center;
             gap: 15px;
             padding: 12px 0;
             border-bottom: 1px solid rgba(255,255,255,0.15);
         }
-        .order-invoice-temp .invoice-item-img {
+        .order-invoice-hidden .invoice-item-img {
             width: 60px;
             height: 60px;
             object-fit: cover;
             border-radius: 12px;
             background: #f5f5f5;
         }
-        .order-invoice-temp .invoice-item-info {
+        .order-invoice-hidden .invoice-item-info {
             flex: 1;
         }
-        .order-invoice-temp .invoice-item-name {
+        .order-invoice-hidden .invoice-item-name {
             font-weight: 600;
             font-size: 14px;
         }
-        .order-invoice-temp .invoice-item-detail {
+        .order-invoice-hidden .invoice-item-detail {
             font-size: 12px;
             opacity: 0.8;
             margin-top: 4px;
         }
-        .order-invoice-temp .invoice-item-price {
+        .order-invoice-hidden .invoice-item-price {
             text-align: right;
             font-weight: bold;
             font-size: 14px;
         }
-        .order-invoice-temp .invoice-total {
+        .order-invoice-hidden .invoice-total {
             margin-top: 20px;
             padding-top: 15px;
             border-top: 2px solid #e67e22;
@@ -375,7 +375,7 @@
             font-size: 18px;
             font-weight: bold;
         }
-        .order-invoice-temp .invoice-date {
+        .order-invoice-hidden .invoice-date {
             text-align: center;
             font-size: 10px;
             opacity: 0.5;
@@ -409,6 +409,9 @@
     </div>
 </div>
 
+<!-- Sipariş özeti resmi için tamamen gizli alan -->
+<div id="orderInvoiceHidden" class="order-invoice-hidden"></div>
+
 <script>
     let products = [];
     let cart = [];
@@ -416,8 +419,8 @@
 
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS7N92CcB-MFe9UlE7YHTSJCVpaBkeRYawz5TbCGpFsZBjy4DHu_LNitJyULHyz9Ml68A6ZcP93cM2H/pub?gid=0&single=true&output=csv";
     
-    // ★ BİLGİLERİNİZ EKLENDİ ★
-    const PHONE_NUMBER = "905647507165134";  // +90 yerine 90 ile başlıyor
+    // ★ BİLGİLERİNİZ ★
+    const PHONE_NUMBER = "905647507165134";
     const IMGBB_API_KEY = "ba463219fce05ebad9c7687ec1efa431";
 
     function calculateCountdown(endDateRaw) {
@@ -484,7 +487,7 @@
         }
     }
 
-    // Resmi ImgBB'ye yükle
+    // Resmi ImgBB'ye yükle (tamamen arka planda)
     async function uploadToImgBB(imageData) {
         const formData = new FormData();
         formData.append('image', imageData.split(',')[1]);
@@ -499,7 +502,7 @@
             if (result.success) {
                 return result.data.url;
             } else {
-                throw new Error('Yükleme başarısız: ' + JSON.stringify(result));
+                throw new Error('Yükleme başarısız');
             }
         } catch(e) {
             console.error('ImgBB hatası:', e);
@@ -507,7 +510,7 @@
         }
     }
 
-    // Siparişi resim olarak oluştur ve linkini al
+    // Siparişi resim olarak oluştur (tamamen gizli)
     async function sendOrderWithImage() {
         if (cart.length === 0) {
             showToast("⚠️ Sepetiniz boş!", true);
@@ -516,15 +519,9 @@
         
         showToast("📸 Sipariş özeti hazırlanıyor...");
         
-        // Geçici bir div oluştur
-        const tempDiv = document.createElement('div');
-        tempDiv.className = 'order-invoice-temp';
-        tempDiv.style.position = 'fixed';
-        tempDiv.style.left = '0';
-        tempDiv.style.top = '0';
-        tempDiv.style.zIndex = '9999';
+        // Gizli alanı doldur
+        const hiddenDiv = document.getElementById("orderInvoiceHidden");
         
-        // İçeriği doldur
         let itemsHtml = "";
         let total = 0;
         
@@ -547,7 +544,7 @@
             `;
         }
         
-        tempDiv.innerHTML = `
+        hiddenDiv.innerHTML = `
             <h2>💎 DIAMOND PLUS</h2>
             <div class="invoice-subtitle">SİPARİŞ ÖZETİ</div>
             ${itemsHtml}
@@ -555,22 +552,17 @@
             <div class="invoice-date">${new Date().toLocaleString('tr-TR')}</div>
         `;
         
-        document.body.appendChild(tempDiv);
-        
         // Render için bekle
         await new Promise(resolve => setTimeout(resolve, 200));
         
         try {
-            const canvas = await html2canvas(tempDiv, {
+            const canvas = await html2canvas(hiddenDiv, {
                 scale: 2,
                 backgroundColor: null,
                 logging: false,
                 useCORS: true,
                 allowTaint: false
             });
-            
-            // Geçici div'i kaldır
-            document.body.removeChild(tempDiv);
             
             const imageData = canvas.toDataURL("image/png");
             
@@ -579,8 +571,11 @@
             // ImgBB'ye yükle
             const imageUrl = await uploadToImgBB(imageData);
             
+            // Gizli alanı temizle
+            hiddenDiv.innerHTML = "";
+            
             if (imageUrl) {
-                // WhatsApp mesajını hazırla
+                // WhatsApp mesajını hazırla (yazılı özet + resim linki)
                 let msg = "💎 YENİ SİPARİŞ (Diamond Plus)%0A%0A";
                 let totalMsg = 0;
                 
@@ -615,8 +610,8 @@
             
         } catch(e) {
             console.error("Hata:", e);
-            if (document.body.contains(tempDiv)) document.body.removeChild(tempDiv);
-            showToast("❌ Bir hata oluştu: " + e.message, true);
+            hiddenDiv.innerHTML = "";
+            showToast("❌ Bir hata oluştu, lütfen tekrar deneyin", true);
         }
     }
 
