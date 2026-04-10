@@ -1,6 +1,7 @@
 /* ============================================
    DIAMOND PLUS - PREMIUM E-TICARET TEMASI
    Profesyonel Tasarım | Mobil Öncelikli
+   (Alt Navigasyon Kaldırıldı)
    ============================================ */
 
 :root {
@@ -48,7 +49,7 @@ body {
     background: var(--bg-primary);
     color: var(--text-primary);
     min-height: 100vh;
-    padding-bottom: 85px;
+    padding-bottom: 100px;
     position: relative;
     overflow-x: hidden;
 }
@@ -159,7 +160,7 @@ body {
 .header-top {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     margin-bottom: 16px;
 }
 
@@ -207,51 +208,6 @@ body {
     color: var(--text-muted);
     letter-spacing: 1px;
     text-transform: uppercase;
-}
-
-.header-actions {
-    display: flex;
-    gap: 12px;
-}
-
-.icon-btn {
-    width: 44px;
-    height: 44px;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-light);
-    border-radius: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-secondary);
-    font-size: 18px;
-    cursor: pointer;
-    transition: var(--transition);
-    position: relative;
-}
-
-.icon-btn:hover {
-    background: var(--bg-tertiary);
-    border-color: var(--border-medium);
-    color: var(--text-primary);
-}
-
-.pulse-dot {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 8px;
-    height: 8px;
-    background: var(--accent);
-    border-radius: 50%;
-    border: 2px solid var(--bg-secondary);
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.7); }
-    70% { box-shadow: 0 0 0 6px rgba(244, 63, 94, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); }
 }
 
 /* Welcome Banner */
@@ -857,7 +813,7 @@ body {
 /* Premium Cart Float */
 .premium-cart-float {
     position: fixed;
-    bottom: 90px;
+    bottom: 30px;
     right: 20px;
     width: 60px;
     height: 60px;
@@ -913,53 +869,6 @@ body {
     filter: blur(20px);
     opacity: 0.3;
     z-index: 1;
-}
-
-/* Bottom Navigation */
-.bottom-nav {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: rgba(20, 20, 31, 0.95);
-    backdrop-filter: blur(20px);
-    border-top: 1px solid var(--border-light);
-    padding: 8px 16px 24px;
-    z-index: 90;
-}
-
-.nav-container {
-    display: flex;
-    align-items: center;
-    justify-content: space-around;
-    max-width: 400px;
-    margin: 0 auto;
-}
-
-.nav-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    padding: 6px 16px;
-    color: var(--text-muted);
-    text-decoration: none;
-    transition: var(--transition);
-    border-radius: 30px;
-}
-
-.nav-item i {
-    font-size: 20px;
-}
-
-.nav-item span {
-    font-size: 11px;
-    font-weight: 500;
-}
-
-.nav-item.active {
-    color: var(--primary);
-    background: rgba(226, 177, 59, 0.1);
 }
 
 /* Premium Modal - Cart */
@@ -1221,16 +1130,10 @@ body {
 }
 
 .total-row {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 700;
     color: var(--text-primary);
-    margin-top: 8px;
     padding-top: 12px;
-    border-top: 1px solid var(--border-light);
-}
-
-.discount-amount {
-    color: var(--success);
 }
 
 .premium-order-btn {
@@ -1353,6 +1256,7 @@ body {
     font-size: 14px;
     font-weight: 700;
     backdrop-filter: blur(4px);
+    display: none;
 }
 
 .quickview-content-area {
@@ -1372,25 +1276,6 @@ body {
     font-weight: 700;
     line-height: 1.3;
     flex: 1;
-    padding-right: 16px;
-}
-
-.quickview-wishlist {
-    width: 44px;
-    height: 44px;
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-light);
-    border-radius: 14px;
-    color: var(--text-secondary);
-    font-size: 20px;
-    cursor: pointer;
-    transition: var(--transition);
-}
-
-.quickview-wishlist:hover {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: white;
 }
 
 .quickview-pricing {
@@ -1435,6 +1320,7 @@ body {
     margin-bottom: 24px;
 }
 
+/* ARTIK + VE - İLE MİKTAR BELİRLEME */
 .quickview-actions-premium {
     display: flex;
     align-items: center;
@@ -1450,6 +1336,7 @@ body {
     border: 1px solid var(--border-light);
     border-radius: 20px;
     padding: 4px;
+    flex: 1.2;
 }
 
 .qty-btn-premium {
@@ -1462,6 +1349,9 @@ body {
     font-size: 14px;
     cursor: pointer;
     transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .qty-btn-premium:hover {
@@ -1472,12 +1362,12 @@ body {
 .qty-value-premium {
     min-width: 40px;
     text-align: center;
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 600;
 }
 
 .add-cart-btn-premium {
-    flex: 1;
+    flex: 2;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1696,7 +1586,7 @@ body {
 /* Toast Container */
 .toast-container {
     position: fixed;
-    bottom: 160px;
+    bottom: 120px;
     left: 20px;
     right: 20px;
     z-index: 9999;
@@ -1744,22 +1634,6 @@ body {
     color: var(--text-primary);
 }
 
-/* Responsive */
-@media (max-width: 380px) {
-    .premium-products-grid {
-        gap: 10px;
-        padding: 0 12px;
-    }
-    
-    .brand-name {
-        font-size: 18px;
-    }
-    
-    .welcome-title {
-        font-size: 18px;
-    }
-}
-
 /* Empty Products State */
 .empty-products-premium {
     grid-column: span 2;
@@ -1789,27 +1663,18 @@ body {
     display: none !important;
 }
 
-.text-gradient {
-    background: linear-gradient(135deg, var(--primary), #FFD700);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-
-/* Animations */
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-@keyframes slideInUp {
-    from { transform: translateY(30px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-}
-
-.fade-in {
-    animation: fadeIn 0.5s ease;
-}
-
-.slide-in-up {
-    animation: slideInUp 0.5s ease;
+/* Responsive */
+@media (max-width: 380px) {
+    .premium-products-grid {
+        gap: 10px;
+        padding: 0 12px;
+    }
+    
+    .brand-name {
+        font-size: 18px;
+    }
+    
+    .welcome-title {
+        font-size: 18px;
+    }
 }
