@@ -1,6 +1,7 @@
 // ============================================
 // DIAMOND PLUS - PREMIUM JAVASCRIPT
 // Profesyonel E-Ticaret Fonksiyonları
+// HEDİYE SİSTEMİ TAMAMEN DÜZELTİLDİ
 // ============================================
 
 'use strict';
@@ -12,6 +13,8 @@ let currentFilter = "all";
 let currentSearch = "";
 let currentQuickViewProduct = null;
 let isLoading = false;
+let lastGiftTotal = 0;
+let giftGiven = false;
 
 // Configuration
 const CONFIG = {
@@ -326,7 +329,7 @@ function quickAddToCart(productId) {
 
 // ==================== CART FUNCTIONS ====================
 function addToCart(product, quantity = 1) {
-    const existing = cart.find(item => item.id === product.id);
+    const existing = cart.find(item => item.id === product.id && !item.isGift);
     
     if (existing) {
         existing.quantity += quantity;
@@ -336,16 +339,23 @@ function addToCart(product, quantity = 1) {
             name: product.name,
             price: parseFloat(product.finalPrice),
             image: product.image,
-            quantity: quantity
+            quantity: quantity,
+            isGift: false
         });
     }
     
     updateCartUI();
+    checkAndAddGift();
 }
 
 function removeFromCart(index) {
+    if (cart[index].isGift) {
+        giftGiven = false;
+        lastGiftTotal = 0;
+    }
     cart.splice(index, 1);
     updateCartUI();
+    checkAndAddGift();
 }
 
 function updateCartQuantity(index, delta) {
@@ -353,9 +363,14 @@ function updateCartQuantity(index, delta) {
     if (newQty > 0) {
         cart[index].quantity = newQty;
     } else {
+        if (cart[index].isGift) {
+            giftGiven = false;
+            lastGiftTotal = 0;
+        }
         cart.splice(index, 1);
     }
     updateCartUI();
+    checkAndAddGift();
 }
 
 function clearCart() {
@@ -365,17 +380,21 @@ function clearCart() {
     }
     
     cart = [];
+    giftGiven = false;
+    lastGiftTotal = 0;
     updateCartUI();
     showToast('🗑️ Sepet temizlendi');
 }
 
 function updateCartUI() {
     const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-    const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const subtotal = cart.reduce((sum, item) => {
+        if (item.isGift) return sum;
+        return sum + (item.price * item.quantity);
+    }, 0);
     
     document.getElementById('cartCount').textContent = totalItems;
     document.getElementById('cartItemCount').textContent = `${totalItems} ürün`;
-    document.getElementById('cartSubtotal').textContent = `$${subtotal.toFixed(2)}`;
     document.getElementById('cartModalTotal').textContent = `$${subtotal.toFixed(2)}`;
     
     renderCartItems();
@@ -403,18 +422,29 @@ function renderCartItems() {
                  alt="${escapeHtml(item.name)}" class="cart-item-image"
                  onerror="this.src='https://via.placeholder.com/60'">
             <div class="cart-item-details">
-                <div class="cart-item-name">${escapeHtml(item.name)}</div>
+                <div class="cart-item-name">
+                    ${item.isGift ? '🎁 ' : ''}${escapeHtml(item.name)}
+                    ${item.isGift ? '<span style="color: var(--primary); margin-left: 8px;">HEDİYE</span>' : ''}
+                </div>
                 <div class="cart-item-meta">
-                    <span class="cart-item-price">$${(item.price * item.quantity).toFixed(2)}</span>
-                    <div class="cart-item-quantity">
-                        <button class="qty-btn-small" onclick="updateCartQuantity(${index}, -1)">
-                            <i class="fas fa-minus"></i>
-                        </button>
-                        <span>${item.quantity}</span>
-                        <button class="qty-btn-small" onclick="updateCartQuantity(${index}, 1)">
-                            <i class="fas fa-plus"></i>
-                        </button>
-                    </div>
+                    <span class="cart-item-price">
+                        ${item.isGift ? 'ÜCRETSİZ' : `$${(item.price * item.quantity).toFixed(2)}`}
+                    </span>
+                    ${!item.isGift ? `
+                        <div class="cart-item-quantity">
+                            <button class="qty-btn-small" onclick="updateCartQuantity(${index}, -1)">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <span>${item.quantity}</span>
+                            <button class="qty-btn-small" onclick="updateCartQuantity(${index}, 1)">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    ` : `
+                        <div class="cart-item-quantity">
+                            <span style="margin-right: 20px;">x${item.quantity}</span>
+                        </div>
+                    `}
                 </div>
             </div>
         </li>
@@ -431,10 +461,14 @@ function sendOrder() {
     let total = 0;
     
     cart.forEach(item => {
-        const itemTotal = item.price * item.quantity;
-        total += itemTotal;
-        message += `🛍️ ${item.name}\n`;
-        message += `   ${item.quantity} adet x $${item.price} = $${itemTotal.toFixed(2)}\n\n`;
+        if (!item.isGift) {
+            const itemTotal = item.price * item.quantity;
+            total += itemTotal;
+            message += `🛍️ ${item.name}\n`;
+            message += `   ${item.quantity} adet x $${item.price} = $${itemTotal.toFixed(2)}\n\n`;
+        } else {
+            message += `🎁 HEDİYE: ${item.name} x ${item.quantity}\n\n`;
+        }
     });
     
     message += `━━━━━━━━━━━━━━━━━━\n`;
@@ -442,6 +476,117 @@ function sendOrder() {
     
     const whatsappUrl = `https://wa.me/${CONFIG.PHONE_NUMBER}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
+}
+
+// ==================== GIFT SYSTEM - TAMAMEN DÜZELTİLDİ ====================
+function getGiftCount(total) {
+    let count = 0;
+    for (let threshold of CONFIG.GIFT_THRESHOLDS) {
+        if (total >= threshold) count++;
+    }
+    return count;
+}
+
+function getRandomGift() {
+    const availableProducts = products.filter(p => {
+        const price = parseFloat(p.finalPrice);
+        return price >= 2 && price <= 5;
+    });
+    
+    if (availableProducts.length === 0) return null;
+    const randomIndex = Math.floor(Math.random() * availableProducts.length);
+    return availableProducts[randomIndex];
+}
+
+function checkAndAddGift() {
+    // Sadece hediye olmayan ürünlerin toplamını hesapla
+    const total = cart.reduce((sum, item) => {
+        if (item.isGift) return sum;
+        return sum + (item.price * item.quantity);
+    }, 0);
+    
+    // Toplam değişmediyse kontrol etme
+    if (total === lastGiftTotal && giftGiven) return;
+    
+    const expectedGiftCount = getGiftCount(total);
+    const currentGiftCount = cart.filter(item => item.isGift).length;
+    
+    console.log(`🎁 Hediye Kontrolü: Toplam=$${total}, Beklenen=${expectedGiftCount}, Mevcut=${currentGiftCount}`);
+    
+    // Eğer hediye hakkı varsa ve henüz verilmemişse
+    if (expectedGiftCount > 0 && currentGiftCount < expectedGiftCount) {
+        // Önce eski hediyeleri temizle
+        cart = cart.filter(item => !item.isGift);
+        
+        // Yeni hediyeleri ekle
+        for (let i = 0; i < expectedGiftCount; i++) {
+            const gift = getRandomGift();
+            if (gift) {
+                cart.push({
+                    id: gift.id + '-gift-' + i,
+                    name: gift.name,
+                    price: parseFloat(gift.finalPrice),
+                    image: gift.image,
+                    quantity: 1,
+                    isGift: true
+                });
+                
+                // Hediye popup'ını göster
+                showGiftModal(gift, i + 1, expectedGiftCount);
+            }
+        }
+        
+        giftGiven = true;
+        lastGiftTotal = total;
+        updateCartUI();
+    } 
+    // Eğer toplam düştüyse ve hediye hakkı azaldıysa
+    else if (expectedGiftCount < currentGiftCount) {
+        cart = cart.filter(item => !item.isGift);
+        
+        if (expectedGiftCount > 0) {
+            for (let i = 0; i < expectedGiftCount; i++) {
+                const gift = getRandomGift();
+                if (gift) {
+                    cart.push({
+                        id: gift.id + '-gift-' + i,
+                        name: gift.name,
+                        price: parseFloat(gift.finalPrice),
+                        image: gift.image,
+                        quantity: 1,
+                        isGift: true
+                    });
+                }
+            }
+        }
+        
+        giftGiven = expectedGiftCount > 0;
+        lastGiftTotal = total;
+        updateCartUI();
+    }
+}
+
+function showGiftModal(gift, index, total) {
+    const modal = document.getElementById('giftModal');
+    const body = document.getElementById('giftModalBody');
+    
+    body.innerHTML = `
+        <h2>🎉 TEBRİKLER!</h2>
+        <img src="${gift.image}" alt="${escapeHtml(gift.name)}" 
+             onerror="this.src='https://via.placeholder.com/160'">
+        <p><strong>${escapeHtml(gift.name)}</strong> hediyesini kazandınız!</p>
+        <p style="font-size: 14px; opacity: 0.9;">${index}/${total} Hediye</p>
+        <div class="gift-price-premium">🎁 ÜCRETSİZ</div>
+        <p style="margin-top: 20px; font-size: 14px; opacity: 0.8;">
+            Hediye sepetinize eklendi!
+        </p>
+    `;
+    
+    modal.classList.add('active');
+    
+    setTimeout(() => {
+        modal.classList.remove('active');
+    }, 4000);
 }
 
 // ==================== RECENT PRODUCTS ====================
@@ -578,7 +723,7 @@ function initializeEventListeners() {
         if (currentQuickViewProduct) {
             const qty = parseInt(document.getElementById('qvQty').textContent);
             addToCart(currentQuickViewProduct, qty);
-            showToast(`✅ ${qty} adet eklendi`);
+            showToast(`✅ ${qty} adet ${currentQuickViewProduct.name} sepete eklendi`);
             closeQuickView();
         }
     });
@@ -588,28 +733,14 @@ function initializeEventListeners() {
     document.getElementById('giftModalClose')?.addEventListener('click', () => {
         giftModal.classList.remove('active');
     });
+    giftModal?.addEventListener('click', (e) => {
+        if (e.target.classList.contains('gift-backdrop')) {
+            giftModal.classList.remove('active');
+        }
+    });
     
     // Clear Recent
     document.getElementById('clearRecentBtn')?.addEventListener('click', clearRecent);
-    
-    // Bottom Navigation
-    document.querySelectorAll('.nav-item').forEach(item => {
-        item.addEventListener('click', (e) => {
-            e.preventDefault();
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            item.classList.add('active');
-        });
-    });
-    
-    // Notification Button
-    document.querySelector('.notification-btn')?.addEventListener('click', () => {
-        showToast('🔔 Yeni bildirim yok', 'success');
-    });
-    
-    // Wishlist Button
-    document.querySelector('.wishlist-btn')?.addEventListener('click', () => {
-        showToast('❤️ Favoriler özelliği yakında!', 'success');
-    });
 }
 
 function closeCartModal() {
@@ -622,78 +753,21 @@ function closeQuickView() {
     document.body.style.overflow = '';
 }
 
-// ==================== GIFT SYSTEM ====================
-function getRandomGift() {
-    const available = products.filter(p => p.price >= 2 && p.price <= 5);
-    if (available.length === 0) return null;
-    return available[Math.floor(Math.random() * available.length)];
-}
-
-function checkAndAddGifts() {
-    const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    let giftCount = 0;
-    
-    for (let threshold of CONFIG.GIFT_THRESHOLDS) {
-        if (total >= threshold) giftCount++;
-    }
-    
-    const currentGifts = cart.filter(item => item.isGift).length;
-    
-    if (giftCount > currentGifts) {
-        const gift = getRandomGift();
-        if (gift) {
-            showGiftModal(gift);
-            cart.push({
-                ...gift,
-                price: 0,
-                quantity: 1,
-                isGift: true
-            });
-            updateCartUI();
-        }
-    }
-}
-
-function showGiftModal(gift) {
-    const modal = document.getElementById('giftModal');
-    const body = document.getElementById('giftModalBody');
-    
-    body.innerHTML = `
-        <h2>🎉 TEBRİKLER!</h2>
-        <img src="${gift.image}" alt="${escapeHtml(gift.name)}" 
-             onerror="this.src='https://via.placeholder.com/160'">
-        <p><strong>${escapeHtml(gift.name)}</strong> hediyesini kazandınız!</p>
-        <div class="gift-price-premium">🎁 ÜCRETSİZ</div>
-        <p style="margin-top: 20px; font-size: 14px; opacity: 0.8;">
-            Hediye sepetinize eklendi!
-        </p>
-    `;
-    
-    modal.classList.add('active');
-    
-    setTimeout(() => {
-        modal.classList.remove('active');
-    }, 4000);
-}
-
 // ==================== INITIALIZATION ====================
 document.addEventListener('DOMContentLoaded', () => {
     console.log('💎 Diamond Plus - Premium E-Ticaret');
     console.log('🚀 Sistem başlatılıyor...');
     
-    // Hide loader after page load
     setTimeout(() => {
         document.querySelector('.page-loader')?.classList.add('hidden');
     }, 1500);
     
     initializeEventListeners();
     loadProducts();
-    
-    // Load recent products on start
     displayRecentProducts();
 });
 
-// Make functions globally available for onclick handlers
+// Make functions globally available
 window.showQuickView = showQuickView;
 window.updateCartQuantity = updateCartQuantity;
 window.quickAddToCart = quickAddToCart;
