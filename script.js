@@ -1,7 +1,8 @@
 // ============================================
 // DIAMOND PLUS - PREMIUM JAVASCRIPT
 // Profesyonel E-Ticaret Fonksiyonları
-// HEDİYE SİSTEMİ TAMAMEN DÜZELTİLDİ
+// HEDİYE SİSTEMİ FİYATA GÖRE OLASILIKLI
+// TAKSİT KALDIRILDI
 // ============================================
 
 'use strict';
@@ -15,13 +16,16 @@ let currentQuickViewProduct = null;
 let isLoading = false;
 let lastGiftTotal = 0;
 let giftGiven = false;
+let productQuantities = {};
 
 // Configuration
 const CONFIG = {
     CSV_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vS7N92CcB-MFe9UlE7YHTSJCVpaBkeRYawz5TbCGpFsZBjy4DHu_LNitJyULHyz9Ml68A6ZcP93cM2H/pub?gid=0&single=true&output=csv",
     PHONE_NUMBER: "9647507165134",
     GIFT_THRESHOLDS: [75, 150, 225, 300, 375],
-    RECENT_LIMIT: 5
+    RECENT_LIMIT: 5,
+    GIFT_MIN_PRICE: 2,
+    GIFT_MAX_PRICE: 4
 };
 
 // ==================== UTILITY FUNCTIONS ====================
@@ -124,6 +128,8 @@ async function loadProducts() {
                 rating: (4 + Math.random()).toFixed(1),
                 reviewCount: Math.floor(Math.random() * 500) + 50
             });
+            
+            productQuantities[id] = 0;
         }
         
         console.log(`✅ ${products.length} products loaded`);
@@ -225,15 +231,16 @@ function renderProducts(productsToRender) {
     let html = '';
     productsToRender.forEach(product => {
         const hasDiscount = product.discountPercent > 0;
+        const currentQty = productQuantities[product.id] || 0;
         
         html += `
-            <div class="product-card-premium" onclick="showQuickView('${product.id}')">
+            <div class="product-card-premium">
                 ${hasDiscount ? `
                     <div class="product-badge">
                         <span class="discount-tag">-${product.discountPercent}%</span>
                     </div>
                 ` : ''}
-                <div class="product-image-wrapper">
+                <div class="product-image-wrapper" onclick="showQuickView('${product.id}')">
                     <img src="${product.image}" alt="${escapeHtml(product.name)}" 
                          onerror="this.src='https://via.placeholder.com/400?text=No+Image'">
                     <div class="quick-view-overlay">
@@ -241,20 +248,33 @@ function renderProducts(productsToRender) {
                     </div>
                 </div>
                 <div class="product-details">
-                    <h3 class="product-title">${escapeHtml(product.name)}</h3>
-                    <div class="product-pricing">
+                    <h3 class="product-title" onclick="showQuickView('${product.id}')">${escapeHtml(product.name)}</h3>
+                    <div class="product-pricing" onclick="showQuickView('${product.id}')">
                         <span class="current-price-premium">$${product.finalPrice}</span>
                         ${product.fakePrice ? `<span class="old-price-premium">$${product.fakePrice}</span>` : ''}
                     </div>
+                    
+                    <!-- ÜRÜN KARTINDA MİKTAR SEÇİMİ -->
+                    <div class="product-quantity-selector">
+                        <button class="product-qty-btn" onclick="decreaseProductQty('${product.id}')">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <span class="product-qty-value" id="qty-${product.id}">${currentQty}</span>
+                        <button class="product-qty-btn" onclick="increaseProductQty('${product.id}')">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                    
                     <div class="product-footer">
-                        <div class="product-rating">
+                        <div class="product-rating" onclick="showQuickView('${product.id}')">
                             <i class="fas fa-star"></i>
                             <span>${product.rating}</span>
                             <span>(${product.reviewCount})</span>
                         </div>
-                        <div class="add-cart-icon" onclick="event.stopPropagation(); quickAddToCart('${product.id}')">
-                            <i class="fas fa-plus"></i>
-                        </div>
+                        <button class="product-add-cart-btn" onclick="addProductToCart('${product.id}')">
+                            <i class="fas fa-shopping-bag"></i>
+                            <span>Sepete Ekle</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -262,6 +282,46 @@ function renderProducts(productsToRender) {
     });
     
     container.innerHTML = html;
+}
+
+// Ürün kartında miktar artırma/azaltma
+function increaseProductQty(productId) {
+    const qtySpan = document.getElementById(`qty-${productId}`);
+    if (qtySpan) {
+        let qty = parseInt(qtySpan.textContent) || 0;
+        qty++;
+        qtySpan.textContent = qty;
+        productQuantities[productId] = qty;
+    }
+}
+
+function decreaseProductQty(productId) {
+    const qtySpan = document.getElementById(`qty-${productId}`);
+    if (qtySpan) {
+        let qty = parseInt(qtySpan.textContent) || 0;
+        if (qty > 0) {
+            qty--;
+            qtySpan.textContent = qty;
+            productQuantities[productId] = qty;
+        }
+    }
+}
+
+function addProductToCart(productId) {
+    const product = products.find(p => p.id === productId);
+    const qty = productQuantities[productId] || 0;
+    
+    if (product && qty > 0) {
+        addToCart(product, qty);
+        showToast(`✅ ${qty} adet ${product.name} sepete eklendi`);
+        
+        // Miktarı sıfırla
+        productQuantities[productId] = 0;
+        const qtySpan = document.getElementById(`qty-${productId}`);
+        if (qtySpan) qtySpan.textContent = '0';
+    } else {
+        showToast('⚠️ Lütfen miktar seçin', 'error');
+    }
 }
 
 // ==================== QUICK VIEW ====================
@@ -478,7 +538,7 @@ function sendOrder() {
     window.open(whatsappUrl, '_blank');
 }
 
-// ==================== GIFT SYSTEM - TAMAMEN DÜZELTİLDİ ====================
+// ==================== GIFT SYSTEM - FİYATA GÖRE OLASILIKLI ====================
 function getGiftCount(total) {
     let count = 0;
     for (let threshold of CONFIG.GIFT_THRESHOLDS) {
@@ -488,24 +548,38 @@ function getGiftCount(total) {
 }
 
 function getRandomGift() {
+    // 2-4 dolar arası ürünleri filtrele
     const availableProducts = products.filter(p => {
         const price = parseFloat(p.finalPrice);
-        return price >= 2 && price <= 5;
+        return price >= CONFIG.GIFT_MIN_PRICE && price <= CONFIG.GIFT_MAX_PRICE;
     });
     
     if (availableProducts.length === 0) return null;
-    const randomIndex = Math.floor(Math.random() * availableProducts.length);
-    return availableProducts[randomIndex];
+    
+    // Fiyata göre ağırlıklı olasılık hesapla (daha düşük fiyat = daha yüksek şans)
+    const weightedProducts = [];
+    
+    availableProducts.forEach(product => {
+        const price = parseFloat(product.finalPrice);
+        // Fiyat ne kadar düşükse ağırlık o kadar yüksek
+        // 2$ = 10 ağırlık, 4$ = 1 ağırlık (doğrusal azalma)
+        const weight = Math.round(10 - ((price - CONFIG.GIFT_MIN_PRICE) / (CONFIG.GIFT_MAX_PRICE - CONFIG.GIFT_MIN_PRICE)) * 9);
+        
+        for (let i = 0; i < weight; i++) {
+            weightedProducts.push(product);
+        }
+    });
+    
+    const randomIndex = Math.floor(Math.random() * weightedProducts.length);
+    return weightedProducts[randomIndex];
 }
 
 function checkAndAddGift() {
-    // Sadece hediye olmayan ürünlerin toplamını hesapla
     const total = cart.reduce((sum, item) => {
         if (item.isGift) return sum;
         return sum + (item.price * item.quantity);
     }, 0);
     
-    // Toplam değişmediyse kontrol etme
     if (total === lastGiftTotal && giftGiven) return;
     
     const expectedGiftCount = getGiftCount(total);
@@ -513,17 +587,14 @@ function checkAndAddGift() {
     
     console.log(`🎁 Hediye Kontrolü: Toplam=$${total}, Beklenen=${expectedGiftCount}, Mevcut=${currentGiftCount}`);
     
-    // Eğer hediye hakkı varsa ve henüz verilmemişse
     if (expectedGiftCount > 0 && currentGiftCount < expectedGiftCount) {
-        // Önce eski hediyeleri temizle
         cart = cart.filter(item => !item.isGift);
         
-        // Yeni hediyeleri ekle
         for (let i = 0; i < expectedGiftCount; i++) {
             const gift = getRandomGift();
             if (gift) {
                 cart.push({
-                    id: gift.id + '-gift-' + i,
+                    id: gift.id + '-gift-' + i + '-' + Date.now(),
                     name: gift.name,
                     price: parseFloat(gift.finalPrice),
                     image: gift.image,
@@ -531,7 +602,6 @@ function checkAndAddGift() {
                     isGift: true
                 });
                 
-                // Hediye popup'ını göster
                 showGiftModal(gift, i + 1, expectedGiftCount);
             }
         }
@@ -539,9 +609,7 @@ function checkAndAddGift() {
         giftGiven = true;
         lastGiftTotal = total;
         updateCartUI();
-    } 
-    // Eğer toplam düştüyse ve hediye hakkı azaldıysa
-    else if (expectedGiftCount < currentGiftCount) {
+    } else if (expectedGiftCount < currentGiftCount) {
         cart = cart.filter(item => !item.isGift);
         
         if (expectedGiftCount > 0) {
@@ -549,7 +617,7 @@ function checkAndAddGift() {
                 const gift = getRandomGift();
                 if (gift) {
                     cart.push({
-                        id: gift.id + '-gift-' + i,
+                        id: gift.id + '-gift-' + i + '-' + Date.now(),
                         name: gift.name,
                         price: parseFloat(gift.finalPrice),
                         image: gift.image,
@@ -640,14 +708,12 @@ function clearRecent() {
 
 // ==================== EVENT LISTENERS ====================
 function initializeEventListeners() {
-    // Search
     const searchInput = document.getElementById('searchInput');
     searchInput?.addEventListener('input', (e) => {
         currentSearch = e.target.value;
         filterProducts();
     });
     
-    // Filter Chips
     document.querySelectorAll('.chip').forEach(chip => {
         chip.addEventListener('click', () => {
             document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
@@ -657,7 +723,6 @@ function initializeEventListeners() {
         });
     });
     
-    // Flash Sale Banner
     document.getElementById('discountBanner')?.addEventListener('click', () => {
         document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
         const discountChip = document.querySelector('.chip[data-filter="discount"]');
@@ -669,7 +734,6 @@ function initializeEventListeners() {
         showToast('🔥 İndirimli ürünler listeleniyor!');
     });
     
-    // Cart Modal
     const cartModal = document.getElementById('cartModal');
     const cartFloat = document.getElementById('cartFloat');
     const closeModalBtn = document.getElementById('closeModalBtn');
@@ -687,17 +751,14 @@ function initializeEventListeners() {
         }
     });
     
-    // Clear Cart
     document.getElementById('clearCartBtn')?.addEventListener('click', () => {
         if (cart.length > 0 && confirm('Sepeti boşaltmak istediğinize emin misiniz?')) {
             clearCart();
         }
     });
     
-    // WhatsApp Order
     document.getElementById('whatsappOrderBtn')?.addEventListener('click', sendOrder);
     
-    // Quick View Modal
     const qvModal = document.getElementById('quickviewModal');
     document.getElementById('quickviewClose')?.addEventListener('click', closeQuickView);
     qvModal?.addEventListener('click', (e) => {
@@ -706,7 +767,6 @@ function initializeEventListeners() {
         }
     });
     
-    // Quick View Quantity
     let qvQty = 1;
     document.getElementById('qvPlus')?.addEventListener('click', () => {
         qvQty++;
@@ -718,7 +778,6 @@ function initializeEventListeners() {
         document.getElementById('qvQty').textContent = qvQty;
     });
     
-    // Quick View Add to Cart
     document.getElementById('qvAddToCart')?.addEventListener('click', () => {
         if (currentQuickViewProduct) {
             const qty = parseInt(document.getElementById('qvQty').textContent);
@@ -728,7 +787,6 @@ function initializeEventListeners() {
         }
     });
     
-    // Gift Modal
     const giftModal = document.getElementById('giftModal');
     document.getElementById('giftModalClose')?.addEventListener('click', () => {
         giftModal.classList.remove('active');
@@ -739,7 +797,6 @@ function initializeEventListeners() {
         }
     });
     
-    // Clear Recent
     document.getElementById('clearRecentBtn')?.addEventListener('click', clearRecent);
 }
 
@@ -752,6 +809,88 @@ function closeQuickView() {
     document.getElementById('quickviewModal').classList.remove('active');
     document.body.style.overflow = '';
 }
+
+// ==================== CSS EKLENTİSİ (style.css'ye ekleyin) ====================
+// Aşağıdaki CSS'i style.css dosyanızın sonuna ekleyin
+
+const additionalStyles = `
+/* Ürün Kartında Miktar Seçimi */
+.product-quantity-selector {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 12px 0;
+    background: var(--bg-tertiary);
+    border-radius: 30px;
+    padding: 6px;
+}
+
+.product-qty-btn {
+    width: 32px;
+    height: 32px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: 20px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.product-qty-btn:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: var(--bg-primary);
+}
+
+.product-qty-value {
+    min-width: 30px;
+    text-align: center;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.product-add-cart-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    border: none;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--bg-primary);
+    cursor: pointer;
+    transition: var(--transition);
+    flex: 1;
+    margin-left: 8px;
+}
+
+.product-add-cart-btn:hover {
+    transform: scale(1.02);
+}
+
+.product-add-cart-btn i {
+    font-size: 12px;
+}
+
+/* Taksit bilgisi gizlendi */
+.pricing-installment {
+    display: none !important;
+}
+`;
+
+// Stilleri sayfaya ekle
+const styleSheet = document.createElement("style");
+styleSheet.textContent = additionalStyles;
+document.head.appendChild(styleSheet);
 
 // ==================== INITIALIZATION ====================
 document.addEventListener('DOMContentLoaded', () => {
@@ -771,3 +910,6 @@ document.addEventListener('DOMContentLoaded', () => {
 window.showQuickView = showQuickView;
 window.updateCartQuantity = updateCartQuantity;
 window.quickAddToCart = quickAddToCart;
+window.increaseProductQty = increaseProductQty;
+window.decreaseProductQty = decreaseProductQty;
+window.addProductToCart = addProductToCart;
